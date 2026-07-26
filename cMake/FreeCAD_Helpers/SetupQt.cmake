@@ -1,6 +1,7 @@
 # -------------------------------- Qt --------------------------------
 
-set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml)
+# LinguistTools provides qt_add_translation(), which the non-GUI part of the tree needs too.
+set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml LinguistTools)
 
 if (FREECAD_QT_MAJOR_VERSION EQUAL 5)
     message(WARNING [[
@@ -27,7 +28,7 @@ if(BUILD_GUI)
         list (APPEND FREECAD_QT_COMPONENTS OpenGLWidgets)
     endif()
 
-    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets LinguistTools)
+    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets)
 
     if(BUILD_DESIGNER_PLUGIN)
         list (APPEND FREECAD_QT_COMPONENTS Designer)
