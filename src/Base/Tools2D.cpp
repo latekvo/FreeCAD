@@ -161,46 +161,32 @@ BoundBox2d Line2d::CalcBoundBox() const
 
 bool Line2d::Intersect(const Line2d& rclLine, Vector2d& rclV) const
 {
-    double m1 = 0.0;
-    double m2 = 0.0;
-    double b1 = 0.0;
-    double b2 = 0.0;
+    // Parametric form, not y = m*x + b: slope/intercept cannot represent a vertical line (hence
+    // the old DBL_MAX sentinel and the exact comparison of the two slopes) and loses most of its
+    // digits near vertical, where b = y - m*x is a difference of two large nearly equal numbers.
+    const Vector2d thisDir = clV2 - clV1;
+    const Vector2d otherDir = rclLine.clV2 - rclLine.clV1;
 
-    // calc coefficients
-    if (fabs(clV2.x - clV1.x) > 1e-10) {
-        m1 = (clV2.y - clV1.y) / (clV2.x - clV1.x);
-    }
-    else {
-        m1 = std::numeric_limits<double>::max();
-    }
-    if (fabs(rclLine.clV2.x - rclLine.clV1.x) > 1e-10) {
-        m2 = (rclLine.clV2.y - rclLine.clV1.y) / (rclLine.clV2.x - rclLine.clV1.x);
-    }
-    else {
-        m2 = std::numeric_limits<double>::max();
-    }
-    if (m1 == m2) { /****** RETURN ERR (parallel lines) *************/
-        return false;
+    const double thisLength = thisDir.Length();
+    const double otherLength = otherDir.Length();
+    if (thisLength == 0.0 || otherLength == 0.0) {
+        return false;  // a degenerate line has no direction to intersect along
     }
 
-    b1 = clV1.y - m1 * clV1.x;
-    b2 = rclLine.clV1.y - m2 * rclLine.clV1.x;
-
-    // calc intersection
-    if (m1 == std::numeric_limits<double>::max()) {
-        rclV.x = clV1.x;
-        rclV.y = m2 * rclV.x + b2;
-    }
-    else if (m2 == std::numeric_limits<double>::max()) {
-        rclV.x = rclLine.clV1.x;
-        rclV.y = m1 * rclV.x + b1;
-    }
-    else {
-        rclV.x = (b2 - b1) / (m1 - m2);
-        rclV.y = m1 * rclV.x + b1;
+    // The 2D cross product is zero exactly when the directions are parallel; scaling the
+    // tolerance by both lengths keeps the test independent of the lines' scale.
+    const double denominator = (thisDir.x * otherDir.y) - (thisDir.y * otherDir.x);
+    if (fabs(denominator) <= std::numeric_limits<double>::epsilon() * thisLength * otherLength) {
+        return false;  // parallel
     }
 
-    return true; /*** RETURN true (intersection) **********/
+    const Vector2d between = rclLine.clV1 - clV1;
+    const double param = ((between.x * otherDir.y) - (between.y * otherDir.x)) / denominator;
+
+    rclV.x = clV1.x + (param * thisDir.x);
+    rclV.y = clV1.y + (param * thisDir.y);
+
+    return true;
 }
 
 bool Line2d::Intersect(const Vector2d& rclV, double eps) const
