@@ -1611,6 +1611,12 @@ const std::vector<std::string>& Feature::searchElementCache(
 TopLoc_Location Feature::getLocation() const
 {
     Base::Placement pl = this->Placement.getValue();
+    const Base::Vector3d& pos = pl.getPosition();
+    if (pos.x == 0.0 && pos.y == 0.0 && pos.z == 0.0 && pl.getRotation().isIdentity()) {
+        // TopLoc_Location(gp_Trsf) allocates a datum and never reports IsIdentity(), so composing
+        // one per recompute grows every sub-shape's location chain without bound.
+        return {};
+    }
     Base::Rotation rot(pl.getRotation());
     Base::Vector3d axis;
     double angle;
