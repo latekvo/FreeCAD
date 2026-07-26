@@ -156,25 +156,32 @@ float PlaneFit::Fit()
     double my {0.0};
     double mz {0.0};
 
+    size_t nSize = _vPoints.size();
+
+    // The covariance must be accumulated about the centre of gravity. Summing the raw second
+    // moments and subtracting the squared mean is the unstable "computational formula": far from
+    // the origin the two terms are huge and nearly equal and their difference is all round-off.
     for (const auto& vPoint : _vPoints) {
-        sxx += double(vPoint.x * vPoint.x);
-        sxy += double(vPoint.x * vPoint.y);
-        sxz += double(vPoint.x * vPoint.z);
-        syy += double(vPoint.y * vPoint.y);
-        syz += double(vPoint.y * vPoint.z);
-        szz += double(vPoint.z * vPoint.z);
         mx += double(vPoint.x);
         my += double(vPoint.y);
         mz += double(vPoint.z);
     }
 
-    size_t nSize = _vPoints.size();
-    sxx = sxx - mx * mx / (double(nSize));
-    sxy = sxy - mx * my / (double(nSize));
-    sxz = sxz - mx * mz / (double(nSize));
-    syy = syy - my * my / (double(nSize));
-    syz = syz - my * mz / (double(nSize));
-    szz = szz - mz * mz / (double(nSize));
+    mx /= double(nSize);
+    my /= double(nSize);
+    mz /= double(nSize);
+
+    for (const auto& vPoint : _vPoints) {
+        const double dx = double(vPoint.x) - mx;
+        const double dy = double(vPoint.y) - my;
+        const double dz = double(vPoint.z) - mz;
+        sxx += dx * dx;
+        sxy += dx * dy;
+        sxz += dx * dz;
+        syy += dy * dy;
+        syz += dy * dz;
+        szz += dz * dz;
+    }
 
 #if defined(FC_USE_EIGEN)
     Eigen::Matrix3d covMat = Eigen::Matrix3d::Zero();
@@ -196,7 +203,7 @@ float PlaneFit::Fit()
     _vDirU.Set(u.x(), u.y(), u.z());
     _vDirV.Set(v.x(), v.y(), v.z());
     _vDirW.Set(w.x(), w.y(), w.z());
-    _vBase.Set(mx / (float)nSize, my / (float)nSize, mz / (float)nSize);
+    _vBase.Set(float(mx), float(my), float(mz));
 
     float sigma = w.dot(covMat * w);
 #else
@@ -247,7 +254,7 @@ float PlaneFit::Fit()
     _vDirU.Set(float(U.X()), float(U.Y()), float(U.Z()));
     _vDirV.Set(float(V.X()), float(V.Y()), float(V.Z()));
     _vDirW.Set(float(W.X()), float(W.Y()), float(W.Z()));
-    _vBase.Set(float(mx / nSize), float(my / nSize), float(mz / nSize));
+    _vBase.Set(float(mx), float(my), float(mz));
     float sigma = float(W.Dot(akMat * W));
 #endif
 

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 add_executable(Mesh_tests_run
+        Core/Approximation.cpp
         Core/KDTree.cpp
         Exporter.cpp
         Importer.cpp
