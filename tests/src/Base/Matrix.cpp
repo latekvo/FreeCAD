@@ -573,5 +573,42 @@ TEST(Matrix, TestToAndFromString)
 
     EXPECT_EQ(mat, inp);
 }
+
+// decompose() returns {shear, scale, rotation, move}; the rotation factor must be a rotation.
+TEST(Matrix, TestDecomposeRotationIsOrthonormal)
+{
+    auto expectOrthonormal = [](const Base::Matrix4D& mat) {
+        for (int i = 0; i < 3; ++i) {
+            EXPECT_NEAR(mat.getCol(i).Length(), 1.0, 1.0e-12);
+            for (int j = i + 1; j < 3; ++j) {
+                EXPECT_NEAR(mat.getCol(i) * mat.getCol(j), 0.0, 1.0e-12);
+            }
+        }
+        EXPECT_NEAR(mat.determinant3(), 1.0, 1.0e-12);
+    };
+
+    // Degenerate input: a single non-null column that is not aligned with a coordinate axis.
+    // decompose() has to invent the two missing directions, and used to do so with a
+    // non-normalised cross product.
+    Base::Matrix4D mat;
+    mat.setCol(0, Base::Vector3d {0.0, 0.6, 0.8});
+    mat.setCol(1, Base::Vector3d {0.0, 0.0, 0.0});
+    mat.setCol(2, Base::Vector3d {0.0, 0.0, 0.0});
+
+    expectOrthonormal(mat.decompose()[2]);
+
+    // ... and the same for a few other single directions, including ones that make the first
+    // candidate cross product vanish.
+    for (const Base::Vector3d& dir : {Base::Vector3d {0.0, 0.0, 1.0},
+                                      Base::Vector3d {1.0, 0.0, 0.0},
+                                      Base::Vector3d {0.28, 0.96, 0.0},
+                                      Base::Vector3d {0.36, 0.48, 0.8}}) {
+        Base::Matrix4D single;
+        single.setCol(0, dir);
+        single.setCol(1, Base::Vector3d {0.0, 0.0, 0.0});
+        single.setCol(2, Base::Vector3d {0.0, 0.0, 0.0});
+        expectOrthonormal(single.decompose()[2]);
+    }
+}
 // clang-format on
 // NOLINTEND(cppcoreguidelines-*,readability-magic-numbers)
