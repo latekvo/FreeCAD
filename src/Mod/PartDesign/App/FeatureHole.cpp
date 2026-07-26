@@ -2124,7 +2124,10 @@ void Hole::rotateToNormal(const gp_Dir& helixAxis, const gp_Dir& normalAxis, Top
             return false;
         }
 
-        angle = acos(dir1 * dir2);
+        // Not acos(dir1 * dir2): gp_Dir is unit length only up to rounding, so for the nearly
+        // parallel axes this is called with the dot product can exceed 1 and acos() returns NaN,
+        // which lands straight in gp_Trsf::SetRotation() below. atan2 has no domain restriction.
+        angle = atan2(gp_Vec(dir1.XYZ()).Crossed(gp_Vec(dir2.XYZ())).Magnitude(), dir1 * dir2);
         if (dir1.IsOpposite(dir2, Precision::Angular())) {
             // Create a vector that is not parallel to dir1
             gp_XYZ xyz(dir1.XYZ());
