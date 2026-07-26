@@ -187,6 +187,16 @@ App::DocumentObjectExecReturn* Chamfer::execute()
                 Precision::Confusion(),
                 TopAbs_SHAPE
             );
+
+            // See PartDesign::Fillet::execute(): widening the tolerances only helps when the
+            // result is merely imprecise, so the outcome has to be checked rather than assumed.
+            if (!BRepAlgo::IsValid(aLarg, shape.getShape(), Standard_False, Standard_False)) {
+                return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
+                    "Exception",
+                    "Resulting shape is invalid. The size is probably too large for the "
+                    "selected edges."
+                ));
+            }
         }
 
         // store shape before refinement
