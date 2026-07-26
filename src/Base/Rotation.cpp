@@ -282,32 +282,33 @@ void Rotation::setValue(const Vector3d& rotateFrom, const Vector3d& rotateTo)
     Vector3d v(rotateTo);
     v.Normalize();
 
-    // The vector from x to is the rotation axis because it's the normal of the plane defined by
-    // (0,u,v)
+    // The cross product of u and v is the rotation axis because it's the normal of the plane
+    // defined by (0,u,v). u%(v-u) and u%(v+u) are algebraically the same thing (u%u == 0) but far
+    // better conditioned: for nearly parallel u and v the cancellation inside u%v is
+    // catastrophic, whereas v-u is exact by Sterbenz' lemma.
     const double dot = u * v;
-    Vector3d w = u % v;
+    Vector3d w = (dot >= 0.0) ? (u % (v - u)) : (u % (v + u));
     const double wlen = w.Length();
 
-    if (wlen == 0.0) {  // Parallel vectors
-        // Check if they are pointing in the same direction.
-        if (dot > 0.0) {
-            this->setValue(0.0, 0.0, 0.0, 1.0);
-        }
-        else {
-            // We can use any axis perpendicular to u (and v)
-            Vector3d t = u % Vector3d(1.0, 0.0, 0.0);
-            if (t.Length() < Base::Vector3d::epsilon()) {
-                t = u % Vector3d(0.0, 1.0, 0.0);
-            }
-            this->setValue(t.x, t.y, t.z, 0.0);
-        }
-    }
-    else {  // Vectors are not parallel
+    if (wlen > 0.0) {  // Vectors are not parallel
         // Note: A quaternion is not well-defined by specifying a point and its transformed point.
         // Every quaternion with a rotation axis having the same angle to the vectors of both points
         // is okay.
-        double angle = acos(dot);
-        this->setValue(w, angle);
+        //
+        // Not acos(dot): rounding can push dot outside [-1,1], where acos() returns NaN, and
+        // acos loses half of its digits as |dot| -> 1.
+        this->setValue(w, atan2(wlen, dot));
+    }
+    else if (dot > 0.0 || u.IsNull() || v.IsNull()) {
+        // A null input has no direction to rotate: identity, not the all-zero quaternion.
+        this->setValue(0.0, 0.0, 0.0, 1.0);
+    }
+    else {  // Antiparallel vectors: we can use any axis perpendicular to u (and v)
+        Vector3d t = u % Vector3d(1.0, 0.0, 0.0);
+        if (t.Length() < Base::Vector3d::epsilon()) {
+            t = u % Vector3d(0.0, 1.0, 0.0);
+        }
+        this->setValue(t.x, t.y, t.z, 0.0);
     }
 }
 
