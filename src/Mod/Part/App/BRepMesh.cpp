@@ -75,9 +75,15 @@ class MergeVertex
 public:
     using Facet = BRepMesh::Facet;
 
-    MergeVertex(std::vector<Base::Vector3d> points, std::vector<Facet> faces, double tolerance)
+    MergeVertex(
+        std::vector<Base::Vector3d> points,
+        std::vector<Facet> faces,
+        std::vector<std::size_t>& domainSizes,
+        double tolerance
+    )
         : points {std::move(points)}
         , faces {std::move(faces)}
+        , domainSizes {domainSizes}
         , tolerance {tolerance}
     {
         setDefaultMap();
@@ -96,6 +102,7 @@ public:
         }
 
         redirectPointIndex();
+        removeDegeneratedFacets();
         auto degreeMap = getPointDegrees();
         decrementPointIndex(degreeMap);
         removeUnusedPoints(degreeMap);
@@ -244,6 +251,30 @@ private:
         }
     }
 
+    void removeDegeneratedFacets()
+    {
+        // Welding two corners onto the same point leaves a zero-area facet with a repeated index.
+        // Same guard as the one BRepMesh::getFacesFromDomains() applies to the un-merged mesh.
+        //
+        // The facets are laid out one domain after another and createSegments() slices them back
+        // apart by domain size alone, so the sizes have to shrink with the array.
+        std::size_t kept = 0;
+        std::size_t pos = 0;
+        for (std::size_t& domainSize : domainSizes) {
+            const std::size_t end = pos + domainSize;
+            const std::size_t keptBefore = kept;
+            for (; pos < end; ++pos) {
+                const Facet& facet = faces[pos];
+                if (facet.I1 == facet.I2 || facet.I2 == facet.I3 || facet.I3 == facet.I1) {
+                    continue;
+                }
+                faces[kept++] = facet;
+            }
+            domainSize = kept - keptBefore;
+        }
+        faces.resize(kept);
+    }
+
     std::vector<std::size_t> getPointDegrees() const
     {
         std::vector<std::size_t> degreeMap;
@@ -294,6 +325,7 @@ private:
 private:
     std::vector<Base::Vector3d> points;
     std::vector<Facet> faces;
+    std::vector<std::size_t>& domainSizes;
     double tolerance = 0.0;
     std::size_t duplicatedPoints = 0;
     std::vector<std::size_t> mapPointIndex;
@@ -352,7 +384,7 @@ void BRepMesh::getFacesFromDomains(
     }
     points.swap(meshPoints);
 
-    MergeVertex merge(points, faces, Precision::Confusion());
+    MergeVertex merge(points, faces, domainSizes, Precision::Confusion());
     if (merge.hasDuplicatedPoints()) {
         merge.mergeDuplicatedPoints();
         points = merge.getPoints();
