@@ -255,9 +255,21 @@ bool MeshGrid::CheckPosition(
     unsigned long& rulZ
 ) const
 {
-    rulX = static_cast<unsigned long>((rclPoint.x - _fMinX) / _fGridLenX);
-    rulY = static_cast<unsigned long>((rclPoint.y - _fMinY) / _fGridLenY);
-    rulZ = static_cast<unsigned long>((rclPoint.z - _fMinZ) / _fGridLenZ);
+    // Reject before converting: truncating a ratio in (-1, 0) towards zero gives 0, which the
+    // range check below then accepts as cell 0. Below -1 the conversion is outright undefined --
+    // x86-64 wraps to a huge value the range check catches, AArch64 saturates to 0 and it does not.
+    const float offsetX = (rclPoint.x - _fMinX) / _fGridLenX;
+    const float offsetY = (rclPoint.y - _fMinY) / _fGridLenY;
+    const float offsetZ = (rclPoint.z - _fMinZ) / _fGridLenZ;
+
+    if (!(offsetX >= 0.0F) || !(offsetY >= 0.0F) || !(offsetZ >= 0.0F)) {
+        // also catches NaN
+        return false;
+    }
+
+    rulX = static_cast<unsigned long>(offsetX);
+    rulY = static_cast<unsigned long>(offsetY);
+    rulZ = static_cast<unsigned long>(offsetZ);
 
     return ((rulX < _ulCtGridsX) && (rulY < _ulCtGridsY) && (rulZ < _ulCtGridsZ));
 }
