@@ -517,16 +517,21 @@ bool MeshFixDegeneratedFacets::Fixup()
 {
     MeshTopoAlgorithm cTopAlg(_rclMesh);
 
+    // Removing a facet slides the following ones down, so the slot just processed has to be
+    // revisited. Do not rewind with it.Set(index - 1): FacetIndex is unsigned, so removing the
+    // facet at index 0 wraps to FACET_INDEX_MAX, which Set() answers by parking the iterator at
+    // end() -- silently abandoning the rest of the mesh while still returning true.
     MeshFacetIterator it(_rclMesh);
-    for (it.Init(); it.More(); it.Next()) {
+    FacetIndex index = 0;
+    while (it.Set(index)) {
         if (it->IsDegenerated(fEpsilon)) {
-            FacetIndex uId = it.Position();
-            bool removed = cTopAlg.RemoveDegeneratedFacet(uId);
-            if (removed) {
-                // due to a modification of the array the iterator became invalid
-                it.Set(uId - 1);
+            const unsigned long before = _rclMesh.CountFacets();
+            cTopAlg.RemoveDegeneratedFacet(index);
+            if (_rclMesh.CountFacets() < before) {
+                continue;
             }
         }
+        ++index;
     }
 
     return true;
@@ -1202,16 +1207,19 @@ bool MeshFixCorruptedFacets::Fixup()
 {
     MeshTopoAlgorithm cTopAlg(_rclMesh);
 
+    // See MeshFixDegeneratedFacets::Fixup() -- rewinding with it.Set(uId - 1) wrapped around for
+    // the facet at index 0 and abandoned the rest of the mesh.
     MeshFacetIterator it(_rclMesh);
-    for (it.Init(); it.More(); it.Next()) {
+    FacetIndex index = 0;
+    while (it.Set(index)) {
         if (it.GetReference().IsDegenerated()) {
-            unsigned long uId = it.Position();
-            bool removed = cTopAlg.RemoveCorruptedFacet(uId);
-            if (removed) {
-                // due to a modification of the array the iterator became invalid
-                it.Set(uId - 1);
+            const unsigned long before = _rclMesh.CountFacets();
+            cTopAlg.RemoveCorruptedFacet(index);
+            if (_rclMesh.CountFacets() < before) {
+                continue;
             }
         }
+        ++index;
     }
 
     return true;
