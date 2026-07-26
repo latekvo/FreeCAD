@@ -2,6 +2,14 @@
 
 #include <gtest/gtest.h>
 #include "PartTestHelpers.h"
+#include <algorithm>
+
+#include <BRepBndLib.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <Bnd_Box.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopLoc_Location.hxx>
+
 #include <Mod/Part/App/TopoShape.h>
 #include "src/App/InitApplication.h"
 
@@ -155,6 +163,86 @@ TEST_F(TopoShapeTest, TestGetSubshape)
     EXPECT_TRUE(silentFail.IsNull());
     EXPECT_THROW(cube1.getSubShape("Face7"), Base::IndexError);          // Out of range
     EXPECT_THROW(cube1.getSubShape("WOOHOO", false), Base::ValueError);  // Invalid
+}
+
+namespace
+{
+// The location of a sub-shape is the composition of its own location with all of its parents'.
+// Applying an identity transform must therefore leave the chain alone -- OCCT does not recognise
+// a TopLoc_Location built from an identity gp_Trsf as identity, so a naive implementation adds
+// another link every single time.
+int locationDepth(const TopoDS_Shape& shape)
+{
+    int depth = 0;
+    TopLoc_Location loc = shape.Location();
+    while (!loc.IsIdentity() && depth < 100000) {
+        ++depth;
+        loc = loc.NextLocation();
+    }
+    return depth;
+}
+
+int maxFaceLocationDepth(const TopoDS_Shape& shape)
+{
+    int worst = 0;
+    for (TopExp_Explorer it(shape, TopAbs_FACE); it.More(); it.Next()) {
+        worst = std::max(worst, locationDepth(it.Current()));
+    }
+    return worst;
+}
+}  // namespace
+
+TEST_F(TopoShapeTest, TestIdentityTransformDoesNotGrowTheLocationChain)
+{
+    Part::TopoShape shape(BRepPrimAPI_MakeBox(1.0, 2.0, 3.0).Shape());
+    ASSERT_EQ(maxFaceLocationDepth(shape.getShape()), 0);
+
+    for (int i = 0; i < 50; ++i) {
+        shape.setTransform(Base::Matrix4D());
+        shape.transformShape(Base::Matrix4D(), false, true);
+    }
+
+    EXPECT_EQ(locationDepth(shape.getShape()), 0);
+    EXPECT_EQ(maxFaceLocationDepth(shape.getShape()), 0);
+}
+
+TEST_F(TopoShapeTest, TestSetTransformStillApplies)
+{
+    Part::TopoShape shape(BRepPrimAPI_MakeBox(1.0, 2.0, 3.0).Shape());
+
+    Base::Matrix4D matrix;
+    matrix.move(Base::Vector3d(10.0, 20.0, 30.0));
+    shape.setTransform(matrix);
+
+    EXPECT_EQ(shape.getTransform(), matrix);
+    // replacing, not composing: the chain stays a single link
+    EXPECT_EQ(locationDepth(shape.getShape()), 1);
+
+    shape.setTransform(Base::Matrix4D());
+    EXPECT_EQ(shape.getTransform(), Base::Matrix4D());
+    EXPECT_EQ(locationDepth(shape.getShape()), 0);
+}
+
+TEST_F(TopoShapeTest, TestTransformShapeStillApplies)
+{
+    Part::TopoShape shape(BRepPrimAPI_MakeBox(1.0, 2.0, 3.0).Shape());
+
+    Base::Matrix4D matrix;
+    matrix.move(Base::Vector3d(10.0, 0.0, 0.0));
+    shape.transformShape(matrix, false, true);
+
+    Bnd_Box bounds;
+    BRepBndLib::Add(shape.getShape(), bounds);
+    Standard_Real xmin {};
+    Standard_Real ymin {};
+    Standard_Real zmin {};
+    Standard_Real xmax {};
+    Standard_Real ymax {};
+    Standard_Real zmax {};
+    bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+    // Bnd_Box pads its result by Precision::Confusion()
+    EXPECT_NEAR(xmin, 10.0, 1.0e-6);
+    EXPECT_NEAR(xmax, 11.0, 1.0e-6);
 }
 
 // clang-format on
