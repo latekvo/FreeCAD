@@ -23,6 +23,12 @@
 
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <unordered_map>
+#include <vector>
 #include <Precision.hxx>
 
 
@@ -107,6 +113,9 @@ public:
     }
 
 private:
+    static constexpr std::size_t noIndex = std::numeric_limits<std::size_t>::max();
+    static constexpr double cellsPerTolerance = 64.0;
+
     void setDefaultMap()
     {
         // by default map point index to itself
@@ -120,55 +129,109 @@ private:
         duplicatedPoints = 0;
     }
 
+    // Cell of the uniform lookup grid a point falls into. The grid is deliberately much coarser
+    // than the tolerance: the coarser it is, the fewer points sit close enough to a cell border
+    // for their neighbouring cells to have to be probed at all.
+    struct Cell
+    {
+        std::int64_t x = 0;
+        std::int64_t y = 0;
+        std::int64_t z = 0;
+
+        bool operator==(const Cell& other) const
+        {
+            return x == other.x && y == other.y && z == other.z;
+        }
+    };
+
+    struct CellHash
+    {
+        std::size_t operator()(const Cell& cell) const
+        {
+            std::size_t seed = 0;
+            for (std::int64_t value : {cell.x, cell.y, cell.z}) {
+                seed ^= std::hash<std::int64_t> {}(value) + 0x9E3779B9U + (seed << 6U) + (seed >> 2U);
+            }
+            return seed;
+        }
+    };
+
+    bool sameWithinTolerance(const Base::Vector3d& lhs, const Base::Vector3d& rhs) const
+    {
+        return std::fabs(lhs.x - rhs.x) < tolerance && std::fabs(lhs.y - rhs.y) < tolerance
+            && std::fabs(lhs.z - rhs.z) < tolerance;
+    }
+
     void check()
     {
-        using VertexIterator = std::vector<Base::Vector3d>::const_iterator;
-
-        double tol3d = tolerance;
-        auto vertexLess = [tol3d](const VertexIterator& v1, const VertexIterator& v2) {
-            if (fabs(v1->x - v2->x) >= tol3d) {
-                return v1->x < v2->x;
-            }
-            if (fabs(v1->y - v2->y) >= tol3d) {
-                return v1->y < v2->y;
-            }
-            if (fabs(v1->z - v2->z) >= tol3d) {
-                return v1->z < v2->z;
-            }
-            return false;  // points are considered to be equal
-        };
-        auto vertexEqual = [&](const VertexIterator& v1, const VertexIterator& v2) {
-            if (vertexLess(v1, v2)) {
-                return false;
-            }
-            if (vertexLess(v2, v1)) {
-                return false;
-            }
-            return true;
-        };
-
-        std::vector<VertexIterator> vertices;
-        vertices.reserve(points.size());
-        for (auto it = points.cbegin(); it != points.cend(); ++it) {
-            vertices.push_back(it);
+        // Being within the tolerance of each other is not a transitive relation, so it cannot be
+        // expressed as an ordering. The tolerant "less than" this used to sort by is therefore
+        // not a strict weak ordering -- with a tolerance of 1, 0.0 ~ 0.6 and 0.6 ~ 1.2 yet
+        // 0.0 < 1.2 -- which makes the std::sort call undefined behaviour, and it also parks
+        // unrelated points between genuine duplicates so the adjacency scan never merged them.
+        // Look the candidates up in a uniform grid instead.
+        const double spacing = tolerance * cellsPerTolerance;
+        if (!(spacing > 0.0)) {
+            return;
         }
 
-        std::sort(vertices.begin(), vertices.end(), vertexLess);
+        std::unordered_map<Cell, std::size_t, CellHash> firstInCell;
+        firstInCell.reserve(points.size());
+        std::vector<std::size_t> nextInCell(points.size(), noIndex);
 
-        auto next = vertices.begin();
-        while (next != vertices.end()) {
-            next = std::adjacent_find(next, vertices.end(), vertexEqual);
-            if (next != vertices.end()) {
-                auto first = next;
-                std::size_t first_index = *first - points.begin();
-                ++next;
-                while (next != vertices.end() && vertexEqual(*first, *next)) {
-                    std::size_t next_index = *next - points.begin();
-                    mapPointIndex[next_index] = first_index;
-                    ++duplicatedPoints;
-                    ++next;
+        for (std::size_t index = 0; index < points.size(); ++index) {
+            const Base::Vector3d& point = points[index];
+            const double coord[3] {point.x, point.y, point.z};
+            if (!std::isfinite(coord[0]) || !std::isfinite(coord[1]) || !std::isfinite(coord[2])) {
+                continue;
+            }
+
+            std::int64_t base[3] {};
+            int lower[3] {};
+            int upper[3] {};
+            for (int axis = 0; axis < 3; ++axis) {
+                // Coordinates beyond anything a model can sensibly hold share the border cells.
+                constexpr double limit = 4.0e18;
+                const double quotient = std::clamp(std::floor(coord[axis] / spacing), -limit, limit);
+                base[axis] = static_cast<std::int64_t>(quotient);
+
+                // Probe a neighbour only on the sides this point is within the tolerance of.
+                const double offset = (coord[axis] / spacing - quotient) * spacing;
+                lower[axis] = offset < tolerance ? -1 : 0;
+                upper[axis] = spacing - offset < tolerance ? 1 : 0;
+            }
+
+            std::size_t duplicate = noIndex;
+            for (int dx = lower[0]; dx <= upper[0] && duplicate == noIndex; ++dx) {
+                for (int dy = lower[1]; dy <= upper[1] && duplicate == noIndex; ++dy) {
+                    for (int dz = lower[2]; dz <= upper[2] && duplicate == noIndex; ++dz) {
+                        auto it = firstInCell.find(Cell {base[0] + dx, base[1] + dy, base[2] + dz});
+                        if (it == firstInCell.end()) {
+                            continue;
+                        }
+                        for (std::size_t other = it->second; other != noIndex;
+                             other = nextInCell[other]) {
+                            if (sameWithinTolerance(point, points[other])) {
+                                duplicate = other;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
+
+            if (duplicate != noIndex) {
+                mapPointIndex[index] = duplicate;
+                ++duplicatedPoints;
+                continue;
+            }
+
+            // Only points that survive as representatives go into the grid, so a duplicate always
+            // maps directly onto a kept point and the map never needs to be followed twice.
+            std::size_t& head
+                = firstInCell.try_emplace(Cell {base[0], base[1], base[2]}, noIndex).first->second;
+            nextInCell[index] = head;
+            head = index;
         }
     }
 
