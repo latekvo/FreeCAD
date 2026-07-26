@@ -1,4 +1,8 @@
 #include <gtest/gtest.h>
+
+#include <cmath>
+#include <numbers>
+
 #include <Base/Matrix.h>
 #include <Base/Rotation.h>
 #include <Base/Tools.h>
@@ -572,6 +576,64 @@ TEST(Matrix, TestToAndFromString)
     inp.fromString(str);
 
     EXPECT_EQ(mat, inp);
+}
+
+// toAxisAngle() only requires the 3x3 block to be orthonormal to within 0.01 per column, so the
+// trace -- and with it (trace-1)/2 -- can leave the domain of acos() and produce a NaN angle.
+TEST(Matrix, TestToAxisAngleNeverReturnsNaN)
+{
+    Base::Vector3d base;
+    Base::Vector3d dir;
+    double angle {};
+    double translation {};
+
+    // slightly over-sized identity: trace = 3.009 => (trace-1)/2 = 1.0045
+    Base::Matrix4D over;
+    over.scale(1.003, 1.003, 1.003);
+    EXPECT_TRUE(over.toAxisAngle(base, dir, angle, translation));
+    EXPECT_FALSE(std::isnan(angle));
+    EXPECT_DOUBLE_EQ(angle, 0.0);
+
+    // slightly over-sized 180 degree rotation: trace = -1.003 => (trace-1)/2 = -1.0015
+    Base::Matrix4D under;
+    under.rotZ(std::numbers::pi);
+    under.scale(1.003, 1.003, 1.003);
+    EXPECT_TRUE(under.toAxisAngle(base, dir, angle, translation));
+    EXPECT_FALSE(std::isnan(angle));
+    EXPECT_DOUBLE_EQ(angle, std::numbers::pi);
+}
+
+// Recovering the angle is not enough on its own. The axis and the base point are derived from the
+// same slightly-off matrix, and at an angle of pi the factor the base point is scaled by used to
+// be a ratio of two quantities that both go to zero there.
+TEST(Matrix, TestToAxisAngleAgreesWithTheExactMatrix)
+{
+    Base::Vector3d base;
+    Base::Vector3d dir;
+    double angle {};
+    double translation {};
+
+    Base::Matrix4D exact;
+    exact.rotZ(std::numbers::pi);
+    exact.move(10.0, 20.0, 30.0);
+    EXPECT_TRUE(exact.toAxisAngle(base, dir, angle, translation));
+    EXPECT_NEAR(base.x, 5.0, 1.0e-9);
+    EXPECT_NEAR(base.y, 10.0, 1.0e-9);
+    EXPECT_NEAR(base.z, 0.0, 1.0e-9);
+    EXPECT_NEAR(translation, 30.0, 1.0e-9);
+
+    // The same rotation carrying the largest scaling error the orthonormality check accepts must
+    // still land on essentially the same axis, base point and translation.
+    Base::Matrix4D scaled;
+    scaled.rotZ(std::numbers::pi);
+    scaled.scale(1.004, 1.004, 1.004);
+    scaled.move(10.0, 20.0, 30.0);
+    EXPECT_TRUE(scaled.toAxisAngle(base, dir, angle, translation));
+    EXPECT_NEAR(dir.Length(), 1.0, 1.0e-9);
+    EXPECT_NEAR(base.x, 5.0, 1.0e-6);
+    EXPECT_NEAR(base.y, 10.0, 1.0e-6);
+    EXPECT_NEAR(base.z, 0.0, 1.0e-6);
+    EXPECT_NEAR(translation, 30.0, 1.0e-6);
 }
 // clang-format on
 // NOLINTEND(cppcoreguidelines-*,readability-magic-numbers)

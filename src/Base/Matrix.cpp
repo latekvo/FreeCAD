@@ -23,6 +23,7 @@
  ***************************************************************************/
 
 
+#include <algorithm>
 #include <cstring>
 #include <sstream>
 
@@ -417,7 +418,9 @@ bool Matrix4D::toAxisAngle(Vector3d& rclBase, Vector3d& rclDir, double& rfAngle,
     // For more details see also http://www.math.niu.edu/~rusin/known-math/97/rotations
 
     double fTrace = dMtrx4D[0][0] + dMtrx4D[1][1] + dMtrx4D[2][2];
-    double fCos = 0.5 * (fTrace - 1.0);
+    // The orthonormality check above allows 0.01 of slack per column, so the trace can reach
+    // 3.03 and (fTrace - 1) / 2 leave the domain of acos().
+    double fCos = std::clamp(0.5 * (fTrace - 1.0), -1.0, 1.0);
     rfAngle = acos(fCos);  // in [0,PI]
 
     if (rfAngle > 0.0) {
@@ -464,6 +467,9 @@ bool Matrix4D::toAxisAngle(Vector3d& rclBase, Vector3d& rclDir, double& rfAngle,
                     rclDir.y = (fHalfInverse * dMtrx4D[1][2]);
                 }
             }
+            // As in the branch above: the diagonal only yields a unit axis for an exactly
+            // orthonormal matrix, and the check above tolerates 0.01 of slack per column.
+            rclDir.Normalize();
         }
     }
     else {
@@ -484,7 +490,10 @@ bool Matrix4D::toAxisAngle(Vector3d& rclBase, Vector3d& rclDir, double& rfAngle,
 
     // This is the base point of the rotation axis
     if (rfAngle > 0.0) {
-        double factor = 0.5 * (1.0 + fTrace) / sin(rfAngle);
+        // cot(angle/2), which is what 0.5 * (1 + trace) / sin(angle) reduces to for an
+        // orthonormal matrix. Written directly it does not need the trace, whose error the
+        // division by sin(angle) blows up without bound as the angle approaches pi.
+        double factor = 1.0 / tan(0.5 * rfAngle);
         rclBase.x = (0.5 * (cPnt.x + factor * (rclDir.y * cPnt.z - rclDir.z * cPnt.y)));
         rclBase.y = (0.5 * (cPnt.y + factor * (rclDir.z * cPnt.x - rclDir.x * cPnt.z)));
         rclBase.z = (0.5 * (cPnt.z + factor * (rclDir.x * cPnt.y - rclDir.y * cPnt.x)));
