@@ -242,13 +242,17 @@ std::vector<TopoShape> DressUp::getFaces(const TopoShape& shape)
     std::vector<TopoShape> ret;
     const auto& vals = Base.getSubValues();
     const auto& subs = Base.getShadowSubs();
-    size_t i = 0;
-    for (auto& val : vals) {
+    // subs is index-parallel to vals, so i must count every entry, not just the faces.
+    for (size_t i = 0; i < vals.size(); ++i) {
+        const auto& val = vals[i];
         if (!boost::starts_with(val, "Face")) {
             continue;
         }
-        auto& sub = subs[i++];
-        auto& ref = sub.newName.size() ? sub.newName : val;
+        if (i >= subs.size()) {
+            break;
+        }
+        const auto& sub = subs[i];
+        const auto& ref = sub.newName.size() ? sub.newName : val;
         TopoShape subshape;
         try {
             subshape = shape.getSubTopoShape(ref.c_str());
