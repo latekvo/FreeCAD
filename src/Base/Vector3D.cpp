@@ -22,6 +22,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -190,24 +191,33 @@ bool Vector3<float_type>::IsOnLineSegment(
     const Vector3<float_type>& endVct
 ) const
 {
-    Vector3<float_type> vectorAB = endVct - startVct;
-    Vector3<float_type> vectorAC = *this - startVct;
-    Vector3<float_type> crossproduct = vectorAB.Cross(vectorAC);
-    float_type dotproduct = vectorAB.Dot(vectorAC);
+    const Vector3<float_type> vectorAB = endVct - startVct;
+    const Vector3<float_type> vectorAC = *this - startVct;
 
-    if (crossproduct.Length() > traits_type::epsilon()) {
+    const float_type lengthAB = vectorAB.Length();
+    if (lengthAB == static_cast<float_type>(0)) {
+        // A degenerate segment contains nothing but its own endpoint.
+        return vectorAC.Length() == static_cast<float_type>(0);
+    }
+
+    // |AB x AC| scales with the square of the coordinates, so comparing it against the machine
+    // epsilon -- a relative quantity, not a length -- made this test scale dependent. Scale the
+    // tolerance by |AB| times the largest magnitude involved instead.
+    const float_type magnitude = std::max(
+        {vectorAC.Length(), lengthAB, startVct.Length(), endVct.Length(), Length()}
+    );
+    const float_type tolerance = 4 * traits_type::epsilon() * lengthAB * magnitude;
+
+    if (vectorAB.Cross(vectorAC).Length() > tolerance) {
         return false;
     }
 
-    if (dotproduct < 0) {
+    const float_type dotproduct = vectorAB.Dot(vectorAC);
+    if (dotproduct < -tolerance) {
         return false;
     }
 
-    if (dotproduct > vectorAB.Sqr()) {
-        return false;
-    }
-
-    return true;
+    return dotproduct <= vectorAB.Sqr() + tolerance;
 }
 
 template<class float_type>
