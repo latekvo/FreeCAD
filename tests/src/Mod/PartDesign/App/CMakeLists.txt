@@ -3,6 +3,7 @@
 add_executable(PartDesign_tests_run
         BackwardCompatibility.cpp
         DatumPlane.cpp
+        Fillet.cpp
         ShapeBinder.cpp
         Pad.cpp
         GeoFeatureGroupExtension.cpp

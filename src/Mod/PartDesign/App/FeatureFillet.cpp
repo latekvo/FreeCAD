@@ -133,6 +133,17 @@ App::DocumentObjectExecReturn* Fillet::execute()
                 Precision::Confusion(),
                 TopAbs_SHAPE
             );
+
+            // BRepFilletAPI_MakeFillet reports IsDone() even for a radius the geometry cannot
+            // take, where the fillet surfaces run into each other; widening the tolerances does
+            // not repair that, so the result has to be validated rather than assumed.
+            if (!BRepAlgo::IsValid(aLarg, shape.getShape(), Standard_False, Standard_False)) {
+                return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
+                    "Exception",
+                    "Resulting shape is invalid. The radius is probably too large for the "
+                    "selected edges."
+                ));
+            }
         }
 
         // store shape before refinement
