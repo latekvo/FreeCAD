@@ -3,6 +3,7 @@
 add_executable(Mesh_tests_run
         Core/Approximation.cpp
         Core/Degeneration.cpp
+        Core/Grid.cpp
         Core/KDTree.cpp
         Exporter.cpp
         Importer.cpp
