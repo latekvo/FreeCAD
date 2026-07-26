@@ -671,12 +671,33 @@ gp_Trsf TopoShape::convert(const Base::Matrix4D& mtrx)
     return trsf;
 }
 
+namespace
+{
+// gp_Trsf::Form() reports gp_Identity only for a transform constructed as such; anything that
+// went through SetValues() (i.e. any converted Base::Matrix4D) is flagged compound.
+bool isIdentityTrsf(const gp_Trsf& trsf)
+{
+    if (trsf.Form() == gp_Identity) {
+        return true;
+    }
+    for (Standard_Integer row = 1; row <= 3; ++row) {
+        for (Standard_Integer col = 1; col <= 4; ++col) {
+            if (trsf.Value(row, col) != (row == col ? 1.0 : 0.0)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+}  // namespace
+
 void TopoShape::setTransform(const Base::Matrix4D& rclTrf)
 {
     gp_Trsf mov;
     convertTogpTrsf(rclTrf, mov);
-    TopLoc_Location loc(mov);
-    _Shape.Location(loc);
+    // TopLoc_Location(gp_Trsf) never reports IsIdentity(), and a sub-shape's location is the
+    // composition of its own with all its parents' -- an identity link deepens every chain.
+    _Shape.Location(isIdentityTrsf(mov) ? TopLoc_Location() : TopLoc_Location(mov));
 }
 
 Base::Matrix4D TopoShape::getTransform() const
@@ -4588,7 +4609,8 @@ TopoShape& TopoShape::makeTransform(const TopoShape& shape, const gp_Trsf& trsf,
         // likely break badly if there is any scaling involved
         tmp._Shape = mkTrf.Shape().Moved(gp_Trsf());
     }
-    else {
+    // Move() composes even an identity trsf onto the chain; see isIdentityTrsf() above.
+    else if (!isIdentityTrsf(trsf)) {
         tmp._Shape.Move(trsf);
     }
     if (op || (shape.Tag && shape.Tag != Tag)) {
