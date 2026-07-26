@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+
+#include <random>
+
 #include <Base/Vector3D.h>
 
 // NOLINTBEGIN
@@ -327,6 +330,70 @@ TEST(Vector, TestAngleOriented)
     EXPECT_EQ(angle, Base::float_traits<double>::pi() * 0.5);
     angle = vec2.GetAngleOriented(vec1, norm);
     EXPECT_EQ(angle, Base::float_traits<double>::pi() * 1.5);
+}
+
+// IsOnLineSegment() compared |AB x AC| -- a quantity that scales with the square of the
+// coordinates -- against the machine epsilon, which is a relative quantity and not a length.
+// The test was therefore scale dependent and rejected most points that lie exactly on their own
+// segment as soon as the coordinates left the unit range.
+TEST(Vector, TestIsOnLineSegmentIsScaleInvariant)
+{
+    std::mt19937_64 rng(20250728);
+    std::uniform_real_distribution<double> position(0.02, 0.98);
+
+    for (double scale : {1.0, 10.0, 1.0e3, 1.0e6}) {
+        std::uniform_real_distribution<double> coordinate(-scale, scale);
+        for (int i = 0; i < 2000; ++i) {
+            const Base::Vector3d start(coordinate(rng), coordinate(rng), coordinate(rng));
+            const Base::Vector3d end(coordinate(rng), coordinate(rng), coordinate(rng));
+            if ((end - start).Length() < 1.0e-9) {
+                continue;
+            }
+
+            const Base::Vector3d inside = start + (end - start) * position(rng);
+            ASSERT_TRUE(inside.IsOnLineSegment(start, end)) << "scale " << scale;
+            ASSERT_TRUE(start.IsOnLineSegment(start, end)) << "scale " << scale;
+            ASSERT_TRUE(end.IsOnLineSegment(start, end)) << "scale " << scale;
+        }
+    }
+}
+
+TEST(Vector, TestIsOnLineSegmentRejectsPointsOffTheSegment)
+{
+    std::mt19937_64 rng(20250729);
+    std::uniform_real_distribution<double> position(0.02, 0.98);
+
+    for (double scale : {1.0, 1.0e3}) {
+        std::uniform_real_distribution<double> coordinate(-scale, scale);
+        for (int i = 0; i < 2000; ++i) {
+            const Base::Vector3d start(coordinate(rng), coordinate(rng), coordinate(rng));
+            const Base::Vector3d end(coordinate(rng), coordinate(rng), coordinate(rng));
+            const Base::Vector3d along = end - start;
+            if (along.Length() < 1.0e-9) {
+                continue;
+            }
+
+            // beyond either end
+            ASSERT_FALSE((start + along * 1.0001).IsOnLineSegment(start, end));
+            ASSERT_FALSE((start - along * 0.0001).IsOnLineSegment(start, end));
+
+            // beside the segment
+            Base::Vector3d sideways(along.y, -along.x, 0.0);
+            if (sideways.Length() < 1.0e-9) {
+                continue;
+            }
+            sideways.Normalize();
+            const Base::Vector3d middle = start + along * position(rng);
+            ASSERT_FALSE((middle + sideways * (1.0e-6 * along.Length())).IsOnLineSegment(start, end));
+        }
+    }
+}
+
+TEST(Vector, TestIsOnLineSegmentDegenerate)
+{
+    const Base::Vector3d point(1.0, 2.0, 3.0);
+    EXPECT_TRUE(point.IsOnLineSegment(point, point));
+    EXPECT_FALSE(Base::Vector3d(1.0, 2.0, 4.0).IsOnLineSegment(point, point));
 }
 
 // NOLINTEND
