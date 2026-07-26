@@ -8,7 +8,11 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include "PartTestHelpers.h"
 #include "App/MappedElement.h"
+#include <numbers>
+
 #include <Base/Interpreter.h>
+#include <Base/Placement.h>
+#include <Mod/Part/App/TopoShape.h>
 
 using namespace Part;
 using namespace PartTestHelpers;
@@ -237,4 +241,50 @@ TEST_F(FeaturePartTest, getComplexElementTypes)
     EXPECT_STREQ(types[0], "Face");
     EXPECT_STREQ(types[1], "Edge");
     EXPECT_STREQ(types[2], "Vertex");
+}
+
+// Feature::getLocation() is composed onto the feature's shape on every recompute. Building it
+// from an identity placement used to yield a TopLoc_Location that carries a datum and does not
+// report IsIdentity(), so each recompute made the location chain of every sub-shape one link
+// longer -- unbounded growth along a feature history, and every OCCT operation that walks or
+// composes locations pays for it.
+TEST_F(FeaturePartTest, testGetLocationIsEmptyForAnIdentityPlacement)
+{
+    _boxes[0]->Placement.setValue(Base::Placement());
+    EXPECT_TRUE(_boxes[0]->getLocation().IsIdentity());
+}
+
+TEST_F(FeaturePartTest, testGetLocationStillCarriesARealPlacement)
+{
+    const Base::Placement placement(
+        Base::Vector3d(10.0, 20.0, 30.0),
+        Base::Rotation(Base::Vector3d(0.0, 0.0, 1.0), std::numbers::pi / 4.0)
+    );
+    _boxes[0]->Placement.setValue(placement);
+
+    const TopLoc_Location location = _boxes[0]->getLocation();
+    EXPECT_FALSE(location.IsIdentity());
+
+    Base::Matrix4D matrix;
+    Part::TopoShape::convertToMatrix(location.Transformation(), matrix);
+    const Base::Placement roundTrip(matrix);
+    EXPECT_TRUE(roundTrip.isSame(placement, 1.0e-12));
+}
+
+// A pure rotation and a pure translation must both survive.
+TEST_F(FeaturePartTest, testGetLocationRotationOnly)
+{
+    const Base::Placement placement(
+        Base::Vector3d(),
+        Base::Rotation(Base::Vector3d(1.0, 1.0, 1.0), 1.0)
+    );
+    _boxes[0]->Placement.setValue(placement);
+    EXPECT_FALSE(_boxes[0]->getLocation().IsIdentity());
+}
+
+TEST_F(FeaturePartTest, testGetLocationTranslationOnly)
+{
+    const Base::Placement placement(Base::Vector3d(0.0, 0.0, 1.0e-9), Base::Rotation());
+    _boxes[0]->Placement.setValue(placement);
+    EXPECT_FALSE(_boxes[0]->getLocation().IsIdentity());
 }
