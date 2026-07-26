@@ -986,6 +986,9 @@ std::array<Matrix4D, 4> Matrix4D::decompose() const
         if (cross.IsNull()) {
             cross = dirs[prim_dir].Cross(Vector3d(0., 1., 0.));
         }
+        // |u x v| is sin(angle), not 1, so without normalising here the rotation factor of the
+        // decomposition comes out non-orthonormal.
+        cross.Normalize();
         dirs[(prim_dir + 1) % 3] = cross;
         dirs[(prim_dir + 2) % 3] = dirs[prim_dir].Cross(cross);
     }
