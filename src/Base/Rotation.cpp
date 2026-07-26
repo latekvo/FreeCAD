@@ -22,6 +22,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <cmath>
 #include <limits>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -110,22 +111,31 @@ void Rotation::getValue(double& q0, double& q1, double& q2, double& q3) const
 
 void Rotation::evaluateVector()
 {
-    // Taken from <http://de.wikipedia.org/wiki/Quaternionen>
-    //
-    // Note: -1 < w < +1 (|w| == 1 not allowed, with w:=quat[3])
-    if ((this->quat[3] > -1.0) && (this->quat[3] < 1.0)) {
-        double rfAngle = acos(this->quat[3]) * 2.0;
-        double scale = sin(rfAngle / 2.0);
-        // Get a normalized vector
+    // Taken from <http://de.wikipedia.org/wiki/Quaternionen>: the axis is the normalized vector
+    // part, the half angle atan2(|vector part|, w). Not acos(w) -- acos loses half of its digits
+    // as |w| -> 1, and w rounds to exactly 1.0 below about 3e-8 rad, where the divide by sin()
+    // that recovered the axis had to be skipped and the axis was discarded altogether.
+    const double vectorLength = std::sqrt(
+        (this->quat[0] * this->quat[0]) + (this->quat[1] * this->quat[1])
+        + (this->quat[2] * this->quat[2])
+    );
+
+    // The quaternion is normalized, so a vector part at the machine epsilon is rounding noise
+    // rather than a direction: the rotation is the identity to the last representable bit and
+    // the axis is arbitrary. Keep answering +Z there, as before. This is four orders of
+    // magnitude below the smallest rotation that carries a meaningful axis.
+    if (vectorLength > std::numeric_limits<double>::epsilon()) {
+        // Keep the length of the previously stored axis
         double l = this->_axis.Length();
         if (l < Base::Vector3d::epsilon()) {
             l = 1;
         }
-        this->_axis.x = this->quat[0] * l / scale;
-        this->_axis.y = this->quat[1] * l / scale;
-        this->_axis.z = this->quat[2] * l / scale;
+        const double scale = l / vectorLength;
+        this->_axis.x = this->quat[0] * scale;
+        this->_axis.y = this->quat[1] * scale;
+        this->_axis.z = this->quat[2] * scale;
 
-        _angle = rfAngle;
+        _angle = 2.0 * atan2(vectorLength, this->quat[3]);
     }
     else {
         _axis.Set(0.0, 0.0, 1.0);
