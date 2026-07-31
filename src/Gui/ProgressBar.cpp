@@ -240,15 +240,12 @@ void SequencerBar::nextStep(bool canAbort)
 
 void SequencerBar::setProgress(size_t step)
 {
-    QThread* currentThread = QThread::currentThread();
-    QThread* thr = d->bar->thread();  // this is the main thread
-    if (thr != currentThread) {
-        QMetaObject::invokeMethod(d->bar, "show", Qt::QueuedConnection);
-    }
-    else {
-        d->bar->show();
-    }
-
+    // Whether the bar belongs on screen is the delayShowTimer's decision. startStep() arms it
+    // for minimumDuration, and ProgressBar::delayedShow() puts the bar up if the operation is
+    // still running by then; the point of that delay is to keep a progress bar off the screen
+    // for work that finishes quickly. Showing it from here walks past it, and hiding a visible
+    // child widget makes Qt repaint what it uncovered on the spot - the whole main window,
+    // 3D view included.
     setValue((int)step);
 }
 
