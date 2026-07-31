@@ -23,6 +23,7 @@ add_executable(Part_tests_run
         PartFeatures.cpp
         PartTestHelpers.cpp
         PropertyTopoShape.cpp
+        StripIdentityLocations.cpp
         TopoDS_Shape.cpp
         TopoShape.cpp
         TopoShapeCache.cpp

@@ -683,7 +683,7 @@ void PropertyPartShape::loadFromFile(Base::Reader& reader)
 
     // delete the temp file
     fi.deleteFile();
-    setValue(shape);
+    setValue(stripIdentityLocations(shape));
 }
 
 void PropertyPartShape::loadFromStream(Base::Reader& reader)
@@ -699,7 +699,7 @@ void PropertyPartShape::loadFromStream(Base::Reader& reader)
         BRep_Builder builder;
         TopoDS_Shape shape;
         BRepTools::Read(shape, reader, builder);
-        setValue(shape);
+        setValue(stripIdentityLocations(shape));
     }
     catch (const std::exception&) {
         reader.imbue(savedLocale);

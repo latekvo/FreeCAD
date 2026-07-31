@@ -28,6 +28,8 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <map>
+#include <set>
 #include <sstream>
 #include <boost/regex.hpp>
 
@@ -36,6 +38,9 @@
 #include <BinTools_ShapeSet.hxx>
 #include <Bnd_Box.hxx>
 #include <BRep_Builder.hxx>
+#include <BRep_TEdge.hxx>
+#include <BRep_TFace.hxx>
+#include <BRep_TVertex.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Surface.hxx>
 #include <Mod/Part/App/FCBRepAlgoAPI_Common.h>
@@ -4635,3 +4640,126 @@ TopoShape& TopoShape::makeGTransform(
     _Shape = shape.transformGShape(rclTrf, copy);
     return *this;
 }
+
+namespace Part
+{
+namespace
+{
+
+/// One item of a location chain, without the identity ones that transform nothing.
+TopLoc_Location strippedLocation(const TopLoc_Location& location)
+{
+    TopLoc_Location stripped;
+    // A location reads `me = NextLocation() * FirstDatum() ^ FirstPower()`, so walking it from
+    // the front visits the factors from right to left and each one goes on the left of what has
+    // been collected so far.
+    for (TopLoc_Location item = location; !item.IsIdentity(); item = item.NextLocation()) {
+        if (isIdentityTrsf(item.FirstDatum()->Transformation())) {
+            continue;
+        }
+        stripped = TopLoc_Location(item.FirstDatum()).Powered(item.FirstPower()) * stripped;
+    }
+    return stripped;
+}
+
+bool hasIdentityItem(const TopLoc_Location& location)
+{
+    for (TopLoc_Location item = location; !item.IsIdentity(); item = item.NextLocation()) {
+        if (isIdentityTrsf(item.FirstDatum()->Transformation())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool anyIdentityItem(const TopoDS_Shape& shape, std::set<const void*>& visited)
+{
+    if (hasIdentityItem(shape.Location())) {
+        return true;
+    }
+    if (!visited.insert(shape.TShape().get()).second) {
+        return false;
+    }
+    if (auto face = Handle(BRep_TFace)::DownCast(shape.TShape())) {
+        if (hasIdentityItem(face->Location())) {
+            return true;
+        }
+    }
+    else if (auto edge = Handle(BRep_TEdge)::DownCast(shape.TShape())) {
+        for (const auto& curve : edge->Curves()) {
+            if (hasIdentityItem(curve->Location())) {
+                return true;
+            }
+        }
+    }
+    else if (auto vertex = Handle(BRep_TVertex)::DownCast(shape.TShape())) {
+        for (const auto& point : vertex->Points()) {
+            if (hasIdentityItem(point->Location())) {
+                return true;
+            }
+        }
+    }
+    for (TopoDS_Iterator it(shape, Standard_False, Standard_False); it.More(); it.Next()) {
+        if (anyIdentityItem(it.Value(), visited)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TopoDS_Shape stripShape(const TopoDS_Shape& shape,
+                        std::map<const void*, TopoDS_Shape>& rebuilt)
+{
+    const void* key = shape.TShape().get();
+    auto known = rebuilt.find(key);
+    TopoDS_Shape base;
+    if (known != rebuilt.end()) {
+        base = known->second;
+    }
+    else {
+        // EmptyCopied() gives a fresh TShape holding the same geometry and no children, so the
+        // originals are left untouched and the copies are ours to reduce.
+        base = shape.EmptyCopied();
+        base.Location(TopLoc_Location());
+        base.Orientation(TopAbs_FORWARD);
+        if (auto face = Handle(BRep_TFace)::DownCast(base.TShape())) {
+            face->Location(strippedLocation(face->Location()));
+        }
+        else if (auto edge = Handle(BRep_TEdge)::DownCast(base.TShape())) {
+            for (auto& curve : edge->ChangeCurves()) {
+                curve->Location(strippedLocation(curve->Location()));
+            }
+        }
+        else if (auto vertex = Handle(BRep_TVertex)::DownCast(base.TShape())) {
+            for (auto& point : vertex->ChangePoints()) {
+                point->Location(strippedLocation(point->Location()));
+            }
+        }
+        BRep_Builder builder;
+        for (TopoDS_Iterator it(shape, Standard_False, Standard_False); it.More(); it.Next()) {
+            builder.Add(base, stripShape(it.Value(), rebuilt));
+        }
+        rebuilt[key] = base;
+    }
+    TopoDS_Shape result = base;
+    result.Location(strippedLocation(shape.Location()));
+    result.Orientation(shape.Orientation());
+    return result;
+}
+
+}  // namespace
+
+TopoDS_Shape stripIdentityLocations(const TopoDS_Shape& shape)
+{
+    if (shape.IsNull()) {
+        return shape;
+    }
+    std::set<const void*> visited;
+    if (!anyIdentityItem(shape, visited)) {
+        return shape;
+    }
+    std::map<const void*, TopoDS_Shape> rebuilt;
+    return stripShape(shape, rebuilt);
+}
+
+}  // namespace Part

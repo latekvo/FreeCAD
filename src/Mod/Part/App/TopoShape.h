@@ -3123,4 +3123,21 @@ struct PartExport MapperHistory: TopoShape::Mapper
     const std::vector<TopoDS_Shape>& generated(const TopoDS_Shape& s) const override;
 };
 
+/** Return the shape with identity items dropped out of every location.
+ *
+ * A sub-shape's location is a linked list of elementary transformations, and
+ * everything that composes or walks one costs time proportional to its length.
+ * An item whose transformation is the identity moves nothing and still costs
+ * the same as any other, so a chain that has collected them is pure overhead.
+ *
+ * The result is geometrically identical: the surviving items keep their order,
+ * so every location composes to the transformation it did before. The locations
+ * the geometry itself carries are reduced the same way, because OCCT pairs a
+ * pcurve with its face by comparing those chains item by item.
+ *
+ * The shape is returned unchanged when it has no identity item to drop, so a
+ * caller keeps shape identity in the ordinary case.
+ */
+PartExport TopoDS_Shape stripIdentityLocations(const TopoDS_Shape& shape);
+
 }  // namespace Part
