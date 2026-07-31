@@ -240,6 +240,13 @@ TopoDS_Shape TopoShape::moved(const TopoDS_Shape& tds, const TopLoc_Location& lo
 
 TopoDS_Shape& TopoShape::move(TopoDS_Shape& tds, const gp_Trsf& transfer)
 {
+    if (isIdentityTransform(transfer)) {
+        // TopoDS_Shape::Move() composes a fresh TopLoc_Datum3D onto the shape's location chain
+        // whatever it is handed, and OCCT can only cancel two items against each other when they
+        // are the same datum object. An identity one therefore never comes off again: it moves
+        // nothing and lengthens the chain of every sub-shape below for the life of the document.
+        return tds;
+    }
 #if OCC_VERSION_HEX < 0x070600
     static constexpr double scalePrecision {1e-14};
     if (std::abs(transfer.ScaleFactor()) > scalePrecision)
@@ -4681,7 +4688,8 @@ TopoShape& TopoShape::makeElementPrismUntil(
             TopLoc_Location loc = face.Location();
             BRepAdaptor_Surface adapt(face, Standard_False);
             // use the placement of the adapter, not of the upToFace
-            loc = TopLoc_Location(adapt.Trsf());
+            loc = isIdentityTransform(adapt.Trsf()) ? TopLoc_Location()
+                                                    : TopLoc_Location(adapt.Trsf());
             BRepBuilderAPI_MakeFace mkFace(adapt.Surface().Surface(), Precision::Confusion());
             if (mkFace.IsDone()) {
                 uptoface.setShape(located(mkFace.Shape(), loc), false);

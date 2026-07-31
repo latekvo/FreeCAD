@@ -3123,6 +3123,14 @@ struct PartExport MapperHistory: TopoShape::Mapper
     const std::vector<TopoDS_Shape>& generated(const TopoDS_Shape& s) const override;
 };
 
+/** Is this transformation the identity?
+ *
+ * gp_Trsf::Form() reports gp_Identity only for a transformation constructed as such: anything
+ * that went through SetValues() or SetRotation() is flagged compound or rotation whatever it
+ * holds, so the values have to be compared.
+ */
+PartExport bool isIdentityTransform(const gp_Trsf& transform);
+
 /** Return the shape with identity items dropped out of every location.
  *
  * A sub-shape's location is a linked list of elementary transformations, and

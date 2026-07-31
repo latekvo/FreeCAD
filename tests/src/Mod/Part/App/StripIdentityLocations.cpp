@@ -206,3 +206,56 @@ TEST(StripIdentityLocations, AcceptsANullShape)
     TopoDS_Shape nothing;
     EXPECT_TRUE(Part::stripIdentityLocations(nothing).IsNull());
 }
+
+TEST(IdentityTransform, RecognisesWhatFormDoesNot)
+{
+    EXPECT_TRUE(Part::isIdentityTransform(gp_Trsf()));
+
+    // gp_Trsf::Form() answers gp_Rotation for this one whatever the angle is.
+    gp_Trsf turnedByNothing;
+    turnedByNothing.SetRotation(gp_Ax1(gp_Pnt(), gp_Dir(0.0, 0.0, 1.0)), 0.0);
+    EXPECT_NE(turnedByNothing.Form(), gp_Identity);
+    EXPECT_TRUE(Part::isIdentityTransform(turnedByNothing));
+
+    gp_Trsf shifted;
+    shifted.SetTranslation(gp_Vec(0.0, 0.0, 1e-9));
+    EXPECT_FALSE(Part::isIdentityTransform(shifted));
+
+    gp_Trsf turned;
+    turned.SetRotation(gp_Ax1(gp_Pnt(), gp_Dir(0.0, 0.0, 1.0)), 1e-9);
+    EXPECT_FALSE(Part::isIdentityTransform(turned));
+}
+
+TEST(IdentityTransform, MovingByItLeavesTheLocationChainAlone)
+{
+    TopoDS_Shape box = BRepPrimAPI_MakeBox(10.0, 20.0, 30.0).Shape();
+    gp_Trsf move;
+    move.SetTranslation(gp_Vec(1.0, 2.0, 3.0));
+    Part::TopoShape::move(box, move);
+    ASSERT_EQ(chainDepth(box.Location()), 1);
+
+    gp_Trsf turnedByNothing;
+    turnedByNothing.SetRotation(gp_Ax1(gp_Pnt(), gp_Dir(0.0, 0.0, 1.0)), 0.0);
+    for (int i = 0; i < 20; ++i) {
+        Part::TopoShape::move(box, turnedByNothing);
+    }
+
+    // Twenty transformations that move nothing must leave nothing behind: OCCT cancels two chain
+    // items only when they are the same datum object, so anything added here would stay forever.
+    EXPECT_EQ(chainDepth(box.Location()), 1);
+    EXPECT_TRUE(sameTransformation(box.Location(), TopLoc_Location(move)));
+}
+
+TEST(IdentityTransform, MovingByARealTransformStillMoves)
+{
+    TopoDS_Shape box = BRepPrimAPI_MakeBox(10.0, 20.0, 30.0).Shape();
+    gp_Trsf move;
+    move.SetTranslation(gp_Vec(1.0, 2.0, 3.0));
+    Part::TopoShape::move(box, move);
+    Part::TopoShape::move(box, move);
+
+    EXPECT_EQ(chainDepth(box.Location()), 2);
+    gp_Trsf twice;
+    twice.SetTranslation(gp_Vec(2.0, 4.0, 6.0));
+    EXPECT_TRUE(sameTransformation(box.Location(), TopLoc_Location(twice)));
+}

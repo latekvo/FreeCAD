@@ -676,25 +676,20 @@ gp_Trsf TopoShape::convert(const Base::Matrix4D& mtrx)
     return trsf;
 }
 
-namespace
+bool Part::isIdentityTransform(const gp_Trsf& transform)
 {
-// gp_Trsf::Form() reports gp_Identity only for a transform constructed as such; anything that
-// went through SetValues() (i.e. any converted Base::Matrix4D) is flagged compound.
-bool isIdentityTrsf(const gp_Trsf& trsf)
-{
-    if (trsf.Form() == gp_Identity) {
+    if (transform.Form() == gp_Identity) {
         return true;
     }
     for (Standard_Integer row = 1; row <= 3; ++row) {
         for (Standard_Integer col = 1; col <= 4; ++col) {
-            if (trsf.Value(row, col) != (row == col ? 1.0 : 0.0)) {
+            if (transform.Value(row, col) != (row == col ? 1.0 : 0.0)) {
                 return false;
             }
         }
     }
     return true;
 }
-}  // namespace
 
 void TopoShape::setTransform(const Base::Matrix4D& rclTrf)
 {
@@ -702,7 +697,7 @@ void TopoShape::setTransform(const Base::Matrix4D& rclTrf)
     convertTogpTrsf(rclTrf, mov);
     // TopLoc_Location(gp_Trsf) never reports IsIdentity(), and a sub-shape's location is the
     // composition of its own with all its parents' -- an identity link deepens every chain.
-    _Shape.Location(isIdentityTrsf(mov) ? TopLoc_Location() : TopLoc_Location(mov));
+    _Shape.Location(isIdentityTransform(mov) ? TopLoc_Location() : TopLoc_Location(mov));
 }
 
 Base::Matrix4D TopoShape::getTransform() const
@@ -4614,8 +4609,8 @@ TopoShape& TopoShape::makeTransform(const TopoShape& shape, const gp_Trsf& trsf,
         // likely break badly if there is any scaling involved
         tmp._Shape = mkTrf.Shape().Moved(gp_Trsf());
     }
-    // Move() composes even an identity trsf onto the chain; see isIdentityTrsf() above.
-    else if (!isIdentityTrsf(trsf)) {
+    // Move() composes even an identity trsf onto the chain; see isIdentityTransform() above.
+    else if (!isIdentityTransform(trsf)) {
         tmp._Shape.Move(trsf);
     }
     if (op || (shape.Tag && shape.Tag != Tag)) {
@@ -4654,7 +4649,7 @@ TopLoc_Location strippedLocation(const TopLoc_Location& location)
     // the front visits the factors from right to left and each one goes on the left of what has
     // been collected so far.
     for (TopLoc_Location item = location; !item.IsIdentity(); item = item.NextLocation()) {
-        if (isIdentityTrsf(item.FirstDatum()->Transformation())) {
+        if (isIdentityTransform(item.FirstDatum()->Transformation())) {
             continue;
         }
         stripped = TopLoc_Location(item.FirstDatum()).Powered(item.FirstPower()) * stripped;
@@ -4665,7 +4660,7 @@ TopLoc_Location strippedLocation(const TopLoc_Location& location)
 bool hasIdentityItem(const TopLoc_Location& location)
 {
     for (TopLoc_Location item = location; !item.IsIdentity(); item = item.NextLocation()) {
-        if (isIdentityTrsf(item.FirstDatum()->Transformation())) {
+        if (isIdentityTransform(item.FirstDatum()->Transformation())) {
             return true;
         }
     }
