@@ -618,6 +618,10 @@ Property* Sheet::setFloatProperty(CellAddress key, double value)
     }
     else {
         floatProp = static_cast<PropertyFloat*>(prop);
+        // Setting an unchanged value would still touch everything that depends on this cell
+        if (floatProp->getValue() == value) {
+            return floatProp;
+        }
     }
 
     propAddress[floatProp] = key;
@@ -647,6 +651,9 @@ Property* Sheet::setIntegerProperty(CellAddress key, long value)
     }
     else {
         intProp = static_cast<PropertyInteger*>(prop);
+        if (intProp->getValue() == value) {
+            return intProp;
+        }
     }
 
     propAddress[intProp] = key;
@@ -689,6 +696,9 @@ Property* Sheet::setQuantityProperty(CellAddress key, double value, const Base::
     }
     else {
         quantityProp = static_cast<PropertySpreadsheetQuantity*>(prop);
+        if (quantityProp->getValue() == value && quantityProp->getUnit() == unit) {
+            return quantityProp;
+        }
     }
 
     propAddress[quantityProp] = key;

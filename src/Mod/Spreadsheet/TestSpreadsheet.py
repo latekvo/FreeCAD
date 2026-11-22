@@ -2167,3 +2167,35 @@ class SpreadsheetCases(unittest.TestCase):
 
         # Restore the original fine-grained recompute preference
         ParamGroup.SetBool("FineGrainedRecompute", fineGrainedPref)
+
+    def testFineGrainedRecomputeUnchangedValue(self):
+        """With fine-grained recompute, restyling a cell or re-entering its content must not
+        recompute the objects that use it, because its value stays the same."""
+
+        ParamGroup = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/General")
+        self.addCleanup(
+            ParamGroup.SetBool, "FineGrainedRecompute", ParamGroup.GetBool("FineGrainedRecompute")
+        )
+        ParamGroup.SetBool("FineGrainedRecompute", True)
+
+        sheet = self.doc.addObject("Spreadsheet::Sheet", "Spreadsheet")
+        varSet = self.doc.addObject("App::VarSet", "VarSet")
+        contents = {"A1": "=10 mm", "A2": "=2.5", "A3": "=4"}  # quantity, float, integer
+        for cell, content in contents.items():
+            sheet.set(cell, content)
+            varSet.addProperty("App::PropertyQuantity", cell)
+            varSet.setExpression(cell, f"Spreadsheet.{cell}")
+        self.doc.recompute()
+
+        for cell, content in contents.items():
+            sheet.setStyle(cell, "bold")
+            sheet.set(cell, content)
+        self.doc.recompute([sheet])
+        self.assertNotIn("Touched", varSet.State)
+
+        # Same number, different unit
+        sheet.set("A1", "=10 deg")
+        self.doc.recompute([sheet])
+        self.assertIn("Touched", varSet.State)
+        self.doc.recompute()
+        self.assertEqual(varSet.A1, Units.Quantity("10 deg"))
