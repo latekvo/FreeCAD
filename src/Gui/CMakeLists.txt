@@ -48,10 +48,6 @@ if(FREECAD_USE_3DCONNEXION_NAVLIB AND (MSVC OR APPLE))
     list(APPEND 3DCONNEXION_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/src/3rdParty/3Dconnexion/inc)
 endif(FREECAD_USE_3DCONNEXION_NAVLIB AND (MSVC OR APPLE))
 
-if (BUILD_VR)
-    add_definitions(-DBUILD_VR )
-endif(BUILD_VR)
-
 if (BUILD_ADDONMGR)
     add_definitions(-DBUILD_ADDONMGR )
 endif(BUILD_ADDONMGR)
@@ -136,14 +132,12 @@ endif()
 if (WIN32)
     # In order to make menus and tooltips usable in fullscreen under Windows we need to call setHasBorderInFullScreen(),
     # defined in Qt's private Gui code. See issue #7563, and the calls to QNativeInterface::Private in MainWindow.cpp
-    if(FREECAD_QT_MAJOR_VERSION EQUAL 6)
-        if(Qt6_VERSION VERSION_GREATER_EQUAL "6.10.0")
-            find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
-        endif()
-        list(APPEND FreeCADGui_LIBS
-            Qt6::GuiPrivate
-        )
+    if(Qt6_VERSION VERSION_GREATER_EQUAL "6.10.0")
+        find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
     endif()
+    list(APPEND FreeCADGui_LIBS
+        Qt6::GuiPrivate
+    )
 endif()
 
 target_include_directories(
@@ -187,33 +181,10 @@ else()
     )
 endif()
 
-if(${Qt5WinExtras_FOUND})
-    target_include_directories(
-        FreeCADGui
-        SYSTEM
-        PUBLIC
-        ${Qt5WinExtras_INCLUDE_DIRS}
-    )
-    list(APPEND FreeCADGui_LIBS
-        ${Qt5WinExtras_LIBRARIES}
-    )
-endif()
-
 IF(SPNAV_FOUND AND FREECAD_USE_3DCONNEXION_LEGACY)
     add_definitions(-D_USE_3DCONNEXION_SDK)
     if(SPNAV_USE_X11)
         add_definitions(-DSPNAV_USE_X11)
-        if (FREECAD_QT_MAJOR_VERSION EQUAL 5 AND UNIX AND NOT APPLE)
-            find_package(Qt5X11Extras REQUIRED)
-            target_include_directories(
-                FreeCADGui
-                SYSTEM
-                PUBLIC
-                ${Qt5X11Extras_INCLUDE_DIRS}
-            )
-            list(APPEND FreeCADGui_LIBS ${Qt5X11Extras_LIBRARIES})
-            # Note that Qt6 has removed the QtX11Extras files
-        endif()
         find_package(X11 QUIET)
         if (X11_FOUND)
             list(APPEND FreeCADGui_LIBS
@@ -283,16 +254,10 @@ if(FREECAD_USE_SHIBOKEN)
         list(APPEND FreeCADGui_LIBS
             ${SHIBOKEN_LIBRARY}
         )
-    else (SHIBOKEN_LIBRARY)
-        if (TARGET Shiboken2::libshiboken)
-            list(APPEND FreeCADGui_LIBS
-                Shiboken2::libshiboken
-            )
-        elseif (TARGET Shiboken6::libshiboken)
-            list(APPEND FreeCADGui_LIBS
-                Shiboken6::libshiboken
-            )
-        endif (TARGET Shiboken2::libshiboken)
+    elseif (TARGET Shiboken6::libshiboken)
+        list(APPEND FreeCADGui_LIBS
+            Shiboken6::libshiboken
+        )
     endif (SHIBOKEN_LIBRARY)
 endif(FREECAD_USE_SHIBOKEN)
 
@@ -311,15 +276,9 @@ if(FREECAD_USE_PYSIDE)
             ${PYSIDE_LIBRARY}
         )
     else (PYSIDE_LIBRARY)
-        if (TARGET PySide2::pyside2)
-            list(APPEND FreeCADGui_LIBS
-                PySide2::pyside2
-            )
-        elseif (TARGET PySide6::pyside6)
-            list(APPEND FreeCADGui_LIBS
-                PySide6::pyside6
-            )
-        endif ()
+        list(APPEND FreeCADGui_LIBS
+            PySide6::pyside6
+        )
     endif (PYSIDE_LIBRARY)
 
     add_definitions(-DHAVE_PYSIDE${PYSIDE_MAJOR_VERSION})
@@ -339,6 +298,18 @@ generate_from_py(AxisOrigin)
 generate_from_py(Command)
 generate_from_py(EditableDatumLabel)
 generate_from_py(Navigation/NavigationStyle)
+generate_module_from_py(
+    FreeCADGui
+    FreeCADGui_MODULE_GENERATED_SRCS
+)
+generate_module_from_py(
+    FreeCADGui.Selection
+    Selection_MODULE_GENERATED_SRCS
+)
+generate_module_from_py(
+    FreeCADGui.PySideUic
+    PySideUic_MODULE_GENERATED_SRCS
+)
 
 generate_embed_from_py(FreeCADGuiInit GuiInitScript.h)
 generate_embed_from_py(FreeCADGuiTest GuiTestScript.h)
@@ -351,6 +322,8 @@ SET(FreeCADGui_Pyi_SRCS
     ViewProviderExtension.pyi
     PythonWorkbench.pyi
     Workbench.pyi
+    FreeCADGui.module.pyi
+    FreeCADGui.Selection.module.pyi
     Selection/SelectionObject.pyi
     Document.pyi
     LinkView.pyi
@@ -422,18 +395,6 @@ if(FREECAD_USE_3DCONNEXION_NAVLIB AND (MSVC OR APPLE))
     )
 endif(FREECAD_USE_3DCONNEXION_NAVLIB AND (MSVC OR APPLE))
 
-set_property(SOURCE GraphvizView.h GraphvizView.cpp PROPERTY SKIP_AUTOMOC ON)
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView-internal.cpp
-    COMMAND ${QtCore_MOC_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView-internal.cpp ${CMAKE_CURRENT_SOURCE_DIR}/GraphvizView.cpp
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/GraphvizView.cpp)
-
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView.cpp
-    COMMAND ${QtCore_MOC_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView.cpp ${CMAKE_CURRENT_SOURCE_DIR}/GraphvizView.h
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/GraphvizView.h)
-
-set_property(SOURCE GraphvizView.cpp APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView-internal.cpp)
-set_property(SOURCE GraphvizView.h APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/moc_GraphvizView.cpp)
-
 set (FreeCAD_TR_QRC ${CMAKE_CURRENT_BINARY_DIR}/Language/FreeCAD_translation.qrc)
 qt_find_and_add_translation(QM_SRCS "Language/FreeCAD_*.ts"
     ${CMAKE_CURRENT_BINARY_DIR}/Language)
@@ -489,6 +450,7 @@ SET(Dialog_CPP_SRCS
     Dialogs/DlgAbout.cpp
     Dialogs/DlgActivateWindowImp.cpp
     Dialogs/DlgCreateNewPreferencePackImp.cpp
+    Dialogs/DlgDocumentObject.cpp
     Dialogs/DlgUnitsCalculatorImp.cpp
     Dialogs/DlgInputDialogImp.cpp
     Dialogs/DlgMacroExecuteImp.cpp
@@ -532,6 +494,7 @@ SET(Dialog_HPP_SRCS
     Dialogs/DlgAbout.h
     Dialogs/DlgActivateWindowImp.h
     Dialogs/DlgCreateNewPreferencePackImp.h
+    Dialogs/DlgDocumentObject.h
     Dialogs/DlgUnitsCalculatorImp.h
     Dialogs/DlgInputDialogImp.h
     Dialogs/DlgMacroExecuteImp.h
@@ -580,6 +543,7 @@ SET(Dialog_SRCS
     Dialogs/DlgAuthorization.ui
     Dialogs/DlgInputDialog.ui
     Dialogs/DlgAddProperty.ui
+    Dialogs/DlgDocumentObject.ui
     Dialogs/DlgLocationAngle.ui
     Dialogs/DlgLocationPos.ui
     Dialogs/DlgMacroExecute.ui
@@ -591,7 +555,6 @@ SET(Dialog_SRCS
     Dialogs/DlgPreferencePackManagement.ui
     Dialogs/DlgProjectInformation.ui
     Dialogs/DlgProjectUtility.ui
-    Dialogs/DlgPropertyLink.ui
     Dialogs/DlgRevertToBackupConfig.ui
     Dialogs/DlgCheckableMessageBox.ui
     Dialogs/DlgTreeWidget.ui
@@ -884,6 +847,7 @@ SET(View3D_CPP_SRCS
     Flag.cpp
     GLBuffer.cpp
     GLPainter.cpp
+    RubberbandOverlay.cpp
     Multisample.cpp
     MouseSelection.cpp
     SplitView3DInventor.cpp
@@ -891,9 +855,7 @@ SET(View3D_CPP_SRCS
     View3DInventor.cpp
     View3DInventorSelection.cpp
     View3DInventorViewer.cpp
-    View3DInventorRiftViewer.cpp
     View3DSettings.cpp
-    CoinRiftWidget.cpp
     View3DPy.cpp
     View3DViewerPy.cpp
     NaviCube.cpp
@@ -903,6 +865,7 @@ SET(View3D_SRCS
     Camera.h
     Flag.h
     GLBuffer.h
+    RubberbandOverlay.h
     GLPainter.h
     Multisample.h
     MouseSelection.h
@@ -912,9 +875,7 @@ SET(View3D_SRCS
     View3DInventorSelection.h
     View3DInventorViewer.h
     View3DPy.h
-    View3DInventorRiftViewer.h
     View3DSettings.h
-    CoinRiftWidget.h
     View3DViewerPy.h
     NaviCube.h
 )
@@ -1153,6 +1114,7 @@ SET(Widget_CPP_SRCS
     NotificationArea.cpp
     PrefWidgets.cpp
     InputField.cpp
+    NumericLocale.cpp
     ProgressBar.cpp
     ProgressDialog.cpp
     QuantitySpinBox.cpp
@@ -1214,14 +1176,16 @@ SET(Params_CPP_SRCS
     ParamHandler.cpp
     ViewParams.cpp
     SpaceMouseParameter.cpp
+    GeneralParameter.cpp
 )
 
 SET(Params_HPP_SRCS
     TreeParams.h
     OverlayParams.h
-    ParamHandler.cpp
+    ParamHandler.h
     ViewParams.h
     SpaceMouseParameter.h
+    GeneralParameter.h
 )
 
 SET(Params_SRCS
@@ -1291,6 +1255,7 @@ SOURCE_GROUP("Workbench" FILES ${Workbench_SRCS})
 SET(Selection_SRCS
     Selection/BoxSelection.cpp
     Selection/BoxSelection.h
+    ${Selection_MODULE_GENERATED_SRCS}
     Selection/SelectionObjectPyImp.cpp
     Selection/SelectionObject.h
     Selection/SelectionObject.cpp
@@ -1309,6 +1274,8 @@ SOURCE_GROUP("Selection" FILES ${Selection_SRCS})
 
 # The FreeCADGui sources
 SET(FreeCADGui_CPP_SRCS
+    ${FreeCADGui_MODULE_GENERATED_SRCS}
+    ${PySideUic_MODULE_GENERATED_SRCS}
     Application.cpp
     ApplicationPy.cpp
     AutoSaver.cpp
@@ -1352,6 +1319,8 @@ SET(FreeCADGui_CPP_SRCS
     StyleParameters/Value.cpp
     StyleParameters/Parser.cpp
     StyleParameters/ParameterManager.cpp
+    StyleParameters/Diagnostics.cpp
+    StyleParameters/ColorShading.cpp
 )
 SET(FreeCADGui_SRCS
     Application.h
@@ -1365,6 +1334,8 @@ SET(FreeCADGui_SRCS
     ExpressionBinding.h
     ExpressionBindingPy.h
     ExpressionCompleter.h
+    FuzzyMatcher.cpp
+    FuzzyMatcher.h
     FreeCADGuiInit.py
     FreeCADGuiTest.py
     FreeCADStyle.h
@@ -1400,6 +1371,12 @@ SET(FreeCADGui_SRCS
     StyleParameters/Value.h
     StyleParameters/Parser.h
     StyleParameters/ParameterManager.h
+    StyleParameters/Diagnostics.h
+    StyleParameters/Edges.h
+    StyleParameters/Insets.h
+    StyleParameters/Corners.h
+    StyleParameters/Gradient.h
+    StyleParameters/ColorShading.h
 )
 
 SET(FreeCADGui_SRCS
@@ -1508,11 +1485,9 @@ if (MSVC)
     target_compile_options(FreeCADGui PRIVATE /wd4251 /wd4273 /wd4275)
 endif()
 
-if (FREECAD_WARN_ERROR)
-    target_compile_warn_error(FreeCADGui)
-endif()
+target_compile_warn_error(FreeCADGui)
 
-SET_BIN_DIR(FreeCADGui FreeCADGui)
+SET_BIN_DIR(FreeCADGui)
 
 if(WIN32)
     INSTALL(TARGETS FreeCADGui

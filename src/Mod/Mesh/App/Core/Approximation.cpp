@@ -1203,8 +1203,9 @@ float CylinderFit::Fit()
 
 # if defined(FC_DEBUG)
         Base::Console().log(
-            "MeshCoreFit::Cylinder Fit:  Base: (%0.4f, %0.4f, %0.4f),  Axis: (%0.6f, %0.6f, "
-            "%0.6f),  Radius: %0.4f,  Std Dev: %0.4f,  Iterations: %d\n",
+            "MeshCoreFit::Cylinder Fit:  Base: ({:0.4f}, {:0.4f}, {:0.4f}),  Axis: ({:0.6f}, "
+            "{:0.6f}, "
+            "{:0.6f}),  Radius: {:0.4f},  Std Dev: {:0.4f},  Iterations: {}\n",
             base.x,
             base.y,
             base.z,
@@ -1256,7 +1257,7 @@ float CylinderFit::Fit()
     Eigen::LevenbergMarquardt<LMCylinderFunctor, double> lm(functor);
     int status = lm.minimize(x);
     Base::Console()
-        .log("Cylinder fit: %d, iterations: %d, gradient norm: %f\n", status, lm.iter, lm.gnorm);
+        .log("Cylinder fit: {}, iterations: {}, gradient norm: {:f}\n", status, lm.iter, lm.gnorm);
 
     _vAxis.x = x(0);
     _vAxis.y = x(1);
@@ -1437,8 +1438,8 @@ float SphereFit::Fit()
 
 #if defined(_DEBUG)
     Base::Console().message(
-        "   WildMagic Sphere Fit:  Center: (%0.4f, %0.4f, %0.4f),  Radius: "
-        "%0.4f,  Std Dev: %0.4f\n",
+        "   WildMagic Sphere Fit:  Center: ({:0.4f}, {:0.4f}, {:0.4f}),  Radius: "
+        "{:0.4f},  Std Dev: {:0.4f}\n",
         _vCenter.x,
         _vCenter.y,
         _vCenter.z,
@@ -1455,8 +1456,8 @@ float SphereFit::Fit()
         Base::Vector3d center = sphereFit.GetCenter();
 #if defined(_DEBUG)
         Base::Console().message(
-            "MeshCoreFit::Sphere Fit:  Center: (%0.4f, %0.4f, %0.4f),  Radius: "
-            "%0.4f,  Std Dev: %0.4f,  Iterations: %d\n",
+            "MeshCoreFit::Sphere Fit:  Center: ({:0.4f}, {:0.4f}, {:0.4f}),  Radius: "
+            "{:0.4f},  Std Dev: {:0.4f},  Iterations: {}\n",
             center.x,
             center.y,
             center.z,

@@ -7,6 +7,8 @@ add_executable(PartDesign_tests_run
         Fillet.cpp
         ShapeBinder.cpp
         Pad.cpp
+        Pipe.cpp
+        Revolution.cpp
         GeoFeatureGroupExtension.cpp
 )
 
