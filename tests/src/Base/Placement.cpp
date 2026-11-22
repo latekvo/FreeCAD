@@ -46,7 +46,7 @@ TEST(Placement, TestMatrix)
     Base::Vector3d axis;
     double angle {};
     plm.getRotation().getValue(axis, angle);
-    EXPECT_EQ(angle, Base::toRadians(90.0));
+    EXPECT_DOUBLE_EQ(angle, Base::toRadians(90.0));
     EXPECT_EQ(axis.IsEqual(Base::Vector3d(0, 1, 0), 0.001), true);
 }
 
