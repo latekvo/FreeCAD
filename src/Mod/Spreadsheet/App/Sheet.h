@@ -270,7 +270,7 @@ protected:
 
     void updateColumnsOrRows(bool horizontal, int section, int count);
 
-    std::set<App::CellAddress> providesTo(App::CellAddress address) const;
+    const std::set<App::CellAddress>& providesTo(App::CellAddress address) const;
 
     void onDocumentRestored() override;
 

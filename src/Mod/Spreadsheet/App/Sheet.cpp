@@ -1779,7 +1779,7 @@ void Sheet::providesTo(CellAddress address, std::set<std::string>& result) const
  * @param result Set of links.
  */
 
-std::set<CellAddress> Sheet::providesTo(CellAddress address) const
+const std::set<CellAddress>& Sheet::providesTo(CellAddress address) const
 {
     return cells.getDeps(getFullName() + "." + address.toString());
 }
