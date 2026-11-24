@@ -1464,7 +1464,7 @@ std::unordered_set<App::DocumentObject*> AssemblyObject::getGroundedParts()
     }
 
     // We also need to add all the root-level datums objects that are not attached.
-    std::vector<App::DocumentObject*> objs = Group.getValues();
+    const auto& objs = Group.getValues();
     for (auto* obj : objs) {
         if (obj->isDerivedFrom<App::LocalCoordinateSystem>()
             || obj->isDerivedFrom<App::DatumElement>()) {
@@ -2554,13 +2554,19 @@ AssemblyObject::MbDPartData AssemblyObject::getMbDData(App::DocumentObject* part
 
     // Associate other objects connected with fixed joints
     if (bundleFixed) {
+        const std::vector<App::DocumentObject*> joints = getJoints();
         auto addConnectedFixedParts = [&](App::DocumentObject* currentPart, auto& self) -> void {
-            std::vector<App::DocumentObject*> joints = getJointsOfPart(currentPart);
+            if (!currentPart) {
+                return;
+            }
             for (auto* joint : joints) {
+                App::DocumentObject* part1 = getMovingPartFromRef(joint, "Reference1");
+                App::DocumentObject* part2 = getMovingPartFromRef(joint, "Reference2");
+                if (currentPart != part1 && currentPart != part2) {
+                    continue;
+                }
                 JointType jointType = getJointType(joint);
                 if (jointType == JointType::Fixed) {
-                    App::DocumentObject* part1 = getMovingPartFromRef(joint, "Reference1");
-                    App::DocumentObject* part2 = getMovingPartFromRef(joint, "Reference2");
                     App::DocumentObject* partToAdd = currentPart == part1 ? part2 : part1;
 
                     if (objectPartMap.find(partToAdd) != objectPartMap.end()) {
