@@ -480,7 +480,7 @@ void PropertyView::onTimer()
                 }
                 else {
                     nameType.propList.push_back(prop);
-                    propDataMap.push_back(nameType);
+                    propDataMap.push_back(std::move(nameType));
                 }
             }
         }
@@ -502,7 +502,7 @@ void PropertyView::onTimer()
                 }
                 else {
                     nameType.propList.push_back(pt->second);
-                    propViewMap.push_back(nameType);
+                    propViewMap.push_back(std::move(nameType));
                 }
             }
         }
@@ -511,7 +511,7 @@ void PropertyView::onTimer()
     // the property must be part of each selected object, i.e. the number
     // of selected objects is equal to the number of properties with same
     // name and id
-    std::vector<PropInfo>::const_iterator it;
+    std::vector<PropInfo>::iterator it;
     PropertyModel::PropertyList dataProps;
     std::map<std::string, std::vector<App::Property*>> dataPropsMap;
     PropertyModel::PropertyList viewProps;
