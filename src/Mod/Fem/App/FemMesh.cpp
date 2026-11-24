@@ -2127,7 +2127,7 @@ void FemMesh::writeABAQUS(
     // See https://forum.freecad.org/viewtopic.php?f=18&t=12646&start=40#p103004
     for (const auto& it : vertexMap) {
         anABAQUS_Output << it.first << ", " << it.second.x << ", " << it.second.y << ", "
-                        << it.second.z << std::endl;
+                        << it.second.z << '\n';
     }
     anABAQUS_Output << std::endl << std::endl;
     ;
@@ -2150,7 +2150,7 @@ void FemMesh::writeABAQUS(
                     }
                     else {
                         if (first_line) {
-                            anABAQUS_Output << "," << std::endl << *kt;
+                            anABAQUS_Output << ",\n" << *kt;
                             first_line = false;
                         }
                         else {
@@ -2158,7 +2158,7 @@ void FemMesh::writeABAQUS(
                         }
                     }
                 }
-                anABAQUS_Output << std::endl;
+                anABAQUS_Output << '\n';
             }
         }
         elsetname += "Evolumes";
@@ -2175,7 +2175,7 @@ void FemMesh::writeABAQUS(
                 for (int kt : jt.second) {
                     anABAQUS_Output << ", " << kt;
                 }
-                anABAQUS_Output << std::endl;
+                anABAQUS_Output << '\n';
             }
         }
         if (elsetname.empty()) {
@@ -2197,7 +2197,7 @@ void FemMesh::writeABAQUS(
                 for (int kt : jt.second) {
                     anABAQUS_Output << ", " << kt;
                 }
-                anABAQUS_Output << std::endl;
+                anABAQUS_Output << '\n';
             }
         }
         if (elsetname.empty()) {
@@ -2275,7 +2275,7 @@ void FemMesh::writeABAQUS(
                 ids.insert(aElement->GetID());
             }
             for (int it : ids) {
-                anABAQUS_Output << it << std::endl;
+                anABAQUS_Output << it << '\n';
             }
 
             // write newline after each group
