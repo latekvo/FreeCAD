@@ -454,10 +454,11 @@ class Dimension(gui_base_original.Creator):
                                 v1 = ed.Vertexes[0].Point
                                 v2 = ed.Vertexes[-1].Point
                                 i1 = i2 = None
-                                for i in range(len(ob.Shape.Vertexes)):
-                                    if v1 == ob.Shape.Vertexes[i].Point:
+                                vertexes = ob.Shape.Vertexes
+                                for i in range(len(vertexes)):
+                                    if v1 == vertexes[i].Point:
                                         i1 = i
-                                    if v2 == ob.Shape.Vertexes[i].Point:
+                                    if v2 == vertexes[i].Point:
                                         i2 = i
                                 if (i1 is not None) and (i2 is not None):
                                     self.indices.append(num)
