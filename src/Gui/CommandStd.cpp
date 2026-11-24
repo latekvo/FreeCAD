@@ -1034,7 +1034,7 @@ bool StdCmdAnnotationLabel::isActive()
 {
     return (
         App::GetApplication().getActiveDocument() != nullptr
-        && !Gui::Selection().getSelectionEx().empty()
+        && Gui::Selection().hasSelection(nullptr)
     );
 }
 
