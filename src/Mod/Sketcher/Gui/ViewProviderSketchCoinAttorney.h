@@ -81,7 +81,7 @@ class ViewProviderSketchCoinAttorney
 {
 private:
     static inline bool constraintHasExpression(const ViewProviderSketch& vp, int constrid);
-    static inline const std::vector<Sketcher::Constraint*> getConstraints(const ViewProviderSketch& vp);
+    static inline const std::vector<Sketcher::Constraint*>& getConstraints(const ViewProviderSketch& vp);
     static inline bool isConstraintActiveInSketch(
         const ViewProviderSketch& vp,
         const Sketcher::Constraint* cstr
@@ -139,7 +139,7 @@ inline bool ViewProviderSketchCoinAttorney::constraintHasExpression(
     return vp.constraintHasExpression(constrid);
 };
 
-inline const std::vector<Sketcher::Constraint*> ViewProviderSketchCoinAttorney::getConstraints(
+inline const std::vector<Sketcher::Constraint*>& ViewProviderSketchCoinAttorney::getConstraints(
     const ViewProviderSketch& vp
 )
 {

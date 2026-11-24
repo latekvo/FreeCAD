@@ -947,7 +947,7 @@ private:
 
     bool constraintHasExpression(int constrid) const;
 
-    const std::vector<Sketcher::Constraint*> getConstraints() const;
+    const std::vector<Sketcher::Constraint*>& getConstraints() const;
     /// gets the corresponding constraint to the given \a constid
     /// or null if it doesn't exist.
     Sketcher::Constraint* getConstraint(int constid) const;
