@@ -353,7 +353,7 @@ Base::Placement GeoFeature::getGlobalPlacement(App::DocumentObject* targetObj,
         return Base::Placement();
     }
 
-    std::vector<std::string> subs = prop->getSubValues();
+    const std::vector<std::string>& subs = prop->getSubValues();
     if (subs.empty()) {
         return Base::Placement();
     }

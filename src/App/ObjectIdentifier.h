@@ -701,7 +701,7 @@ public:
      * @param[in] _component The name of the component.
      * @return A new Component object.
      */
-    static Component SimpleComponent(const std::string _component)
+    static Component SimpleComponent(const std::string& _component)
     {
         return Component::SimpleComponent(_component.c_str());
     }
