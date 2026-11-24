@@ -592,7 +592,6 @@ MappedName ElementMap::setElementName(const IndexedName& element,
         sid = &_sid;
     }
 
-    std::ostringstream ss;
     Data::MappedName mappedName(name);
     for (int i = 0;;) {
         IndexedName existing;
