@@ -866,7 +866,7 @@ QVector<Data::MappedElement> Feature::getRelatedElements(
 
     const char* shapetype = TopoShape::shapeName(type).c_str();
     std::ostringstream ss;
-    for (size_t i = 1; i <= shape.countSubShapes(type); ++i) {
+    for (size_t i = 1, count = shape.countSubShapes(type); i <= count; ++i) {
         Data::MappedElement related;
         related.index = Data::IndexedName::fromConst(shapetype, i);
         related.name = shape.getMappedName(related.index);
@@ -949,7 +949,7 @@ static TopoShape _getTopoShape(
     const char* subname,
     Base::Matrix4D* pmat,
     App::DocumentObject** powner,
-    const std::set<std::string> hiddens,
+    const std::set<std::string>& hiddens,
     const App::DocumentObject* lastLink
 )
 

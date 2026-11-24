@@ -1217,7 +1217,7 @@ void AttachEngine::throwWrongMode(eMapMode mmode)
 
 void AttachEngine::verifyReferencesAreSafe(const App::PropertyLinkSubList& references)
 {
-    const std::vector<App::DocumentObject*> links = references.getValues();
+    const std::vector<App::DocumentObject*>& links = references.getValues();
     const std::vector<App::Document*> docs = App::GetApplication().getDocuments();
     for (App::DocumentObject* lnk : links) {
         bool found = false;
