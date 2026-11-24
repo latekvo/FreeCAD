@@ -593,6 +593,16 @@ std::vector<TopoDS_Edge> DrawProjectSplit::removeOverlapEdges(const std::vector<
     std::vector<TopoDS_Edge> overlapEdges;
     std::vector<bool> skipThisEdge(inEdges.size(), false);
     int edgeCount = inEdges.size();
+    std::vector<Bnd_Box> boxes(edgeCount);
+    std::vector<bool> haveBox(edgeCount, false);
+    auto boxOf = [&](int i) -> const Bnd_Box& {
+        if (!haveBox[i]) {
+            BRepBndLib::Add(inEdges.at(i), boxes[i]);
+            boxes[i].SetGap(0.1);           //generous
+            haveBox[i] = true;
+        }
+        return boxes[i];
+    };
     int ie0 = 0;
     for (; ie0 < edgeCount; ie0++) {
         if (skipThisEdge.at(ie0)) {
@@ -603,7 +613,9 @@ std::vector<TopoDS_Edge> DrawProjectSplit::removeOverlapEdges(const std::vector<
             if (skipThisEdge.at(ie1)) {
                 continue;
             }
-            int rc = isSubset(inEdges.at(ie0), inEdges.at(ie1));
+            const Bnd_Box& box0 = boxOf(ie0);
+            const Bnd_Box& box1 = boxOf(ie1);
+            int rc = isSubset(inEdges.at(ie0), box0, inEdges.at(ie1), box1);
             if (rc == e0ISSUBSET) {
                 skipThisEdge.at(ie0) = true;
                 break;      //stop checking ie0
@@ -674,9 +686,10 @@ bool DrawProjectSplit::curvesCoincide(const TopoDS_Edge& e0,
 }
 
 //determine if edge0 & edge1 are superimposed, and classify the type of overlap
-int DrawProjectSplit::isSubset(const TopoDS_Edge &edge0, const TopoDS_Edge &edge1)
+int DrawProjectSplit::isSubset(const TopoDS_Edge &edge0, const Bnd_Box& box0,
+                               const TopoDS_Edge &edge1, const Bnd_Box& box1)
 {
-    if (!boxesIntersect(edge0, edge1)) {
+    if (box0.IsOut(box1)) {
         return NOTASUBSET;      //boxes don't intersect, so edges do not overlap
     }
 
@@ -745,19 +758,6 @@ std::vector<TopoDS_Edge> DrawProjectSplit::fuseEdges(const TopoDS_Edge &edge0, c
         edgeList.push_back(TopoDS::Edge(edges.Current()));
     }
     return edgeList;
-}
-
-bool DrawProjectSplit::boxesIntersect(const TopoDS_Edge &edge0, const TopoDS_Edge &edge1)
-{
-    Bnd_Box box0, box1;
-    BRepBndLib::Add(edge0, box0);
-    box0.SetGap(0.1);           //generous
-    BRepBndLib::Add(edge1, box1);
-    box1.SetGap(0.1);
-    if (box0.IsOut(box1)) {
-        return false;      //boxes don't intersect
-    }
-    return true;
 }
 
 //this is an aid to debugging and isn't used in normal processing.
