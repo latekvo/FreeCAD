@@ -1266,9 +1266,8 @@ void ViewProviderAssembly::onSelectionChanged(const Gui::SelectionChanges& msg)
 {
     // onSelectionChanged is called from both Selection.cpp and SelectionObserver.
     // In the case where you have nested assemblies, that would cause issues. See #27532
-    bool singleAssembly
-        = getDocument()->getDocument()->getObjectsOfType<Assembly::AssemblyObject>().size() == 1;
-    if (!isInEditMode() && !singleAssembly) {
+    if (!isInEditMode()
+        && getDocument()->getDocument()->getObjectsOfType<Assembly::AssemblyObject>().size() != 1) {
         return;
     }
 

@@ -576,16 +576,19 @@ void GeometryObject::addGeomFromCompound(TopoDS_Shape edgeCompound, EdgeClass ca
 
         std::vector<VertexPtr>::iterator itVertex = vertexGeom.begin();
         for (; itVertex != vertexGeom.end(); itVertex++) {
-            if ((*itVertex)->isEqual(*v1, Precision::Confusion())) {
+            if (v1Add && (*itVertex)->isEqual(*v1, Precision::Confusion())) {
                 v1Add = false;
             }
-            if ((*itVertex)->isEqual(*v2, Precision::Confusion())) {
+            if (v2Add && (*itVertex)->isEqual(*v2, Precision::Confusion())) {
                 v2Add = false;
             }
             if (circle) {
-                if ((*itVertex)->isEqual(*c1, Precision::Confusion())) {
+                if (c1Add && (*itVertex)->isEqual(*c1, Precision::Confusion())) {
                     c1Add = false;
                 }
+            }
+            if (!v1Add && !v2Add && (!circle || !c1Add)) {
+                break;
             }
         }
         if (v1Add) {

@@ -615,7 +615,7 @@ void TaskMeasure::removeObject()
 
 bool TaskMeasure::hasSelection()
 {
-    return !Gui::Selection().getSelection().empty();
+    return Gui::Selection().hasSelection(nullptr);
 }
 
 void TaskMeasure::clearSelection()

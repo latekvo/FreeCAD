@@ -805,7 +805,7 @@ App::DocumentObject* ObjectIdentifier::getDocumentObject(const App::Document* do
         }
     }
 
-    std::vector<DocumentObject*> docObjects = doc->getObjects();
+    const std::vector<DocumentObject*>& docObjects = doc->getObjects();
     for (auto docObject : docObjects) {
         if (strcmp(docObject->Label.getValue(), static_cast<const char*>(name)) == 0) {
             // Found object with matching label

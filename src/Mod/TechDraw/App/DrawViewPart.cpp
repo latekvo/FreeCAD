@@ -979,7 +979,10 @@ TechDraw::VertexPtr DrawViewPart::getVertex(std::string vertexName) const
 //! TechDraw edge names run from 0 to n-1
 TechDraw::BaseGeomPtr DrawViewPart::getEdge(std::string edgeName) const
 {
-    const std::vector<TechDraw::BaseGeomPtr>& geoms = getEdgeGeometry();
+    if (!geometryObject) {
+        return nullptr;
+    }
+    const std::vector<TechDraw::BaseGeomPtr>& geoms = geometryObject->getEdgeGeometry();
     if (geoms.empty()) {
         //should not happen
         return nullptr;
@@ -996,7 +999,10 @@ TechDraw::BaseGeomPtr DrawViewPart::getEdge(std::string edgeName) const
 //! TechDraw face names run from 0 to n-1
 TechDraw::FacePtr DrawViewPart::getFace(std::string faceName) const
 {
-    const std::vector<TechDraw::FacePtr>& faces = getFaceGeometry();
+    if (waitingForFaces() || !geometryObject) {
+        return nullptr;
+    }
+    const std::vector<TechDraw::FacePtr>& faces = geometryObject->getFaceGeometry();
     if (faces.empty()) {
         //should not happen
         return nullptr;
@@ -1029,7 +1035,10 @@ const BaseGeomPtrVector DrawViewPart::getEdgeGeometry() const
 //! returns existing BaseGeom of 2D Edge(idx)
 TechDraw::BaseGeomPtr DrawViewPart::getGeomByIndex(int idx) const
 {
-    const std::vector<TechDraw::BaseGeomPtr>& geoms = getEdgeGeometry();
+    if (!geometryObject) {
+        return nullptr;
+    }
+    const std::vector<TechDraw::BaseGeomPtr>& geoms = geometryObject->getEdgeGeometry();
     if (geoms.empty()) {
         return nullptr;
     }
@@ -1042,7 +1051,10 @@ TechDraw::BaseGeomPtr DrawViewPart::getGeomByIndex(int idx) const
 //! returns existing geometry of 2D Vertex(idx)
 TechDraw::VertexPtr DrawViewPart::getProjVertexByIndex(int idx) const
 {
-    const std::vector<TechDraw::VertexPtr>& geoms = getVertexGeometry();
+    if (!geometryObject) {
+        return nullptr;
+    }
+    const std::vector<TechDraw::VertexPtr>& geoms = geometryObject->getVertexGeometry();
     if (geoms.empty()) {
        return nullptr;
     }

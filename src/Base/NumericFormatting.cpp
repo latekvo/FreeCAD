@@ -66,6 +66,11 @@ NumericFormatSymbols resolveNumericFormatSymbols(
         formatting.zeroDigit
     };
 
+    if (!result.decimal.empty() && !result.grouping.empty() && !result.positiveSign.empty()
+        && !result.negativeSign.empty() && !result.zeroDigit.empty()) {
+        return result;
+    }
+
     UErrorCode status = U_ZERO_ERROR;
     icu::DecimalFormatSymbols symbols(locale, status);
     if (U_SUCCESS(status)) {

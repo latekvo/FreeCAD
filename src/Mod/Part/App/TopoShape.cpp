@@ -292,9 +292,14 @@ TopoShape::TopoShape(const TopoDS_Shape& shape, long tag, App::StringHasherRef h
 }
 
 TopoShape::TopoShape(const TopoShape& shape)
-    : _Shape(*this)
+    : _parentCache(shape._parentCache)
+    , _cache(shape._cache)
+    , _subLocation(shape._subLocation)
+    , _Shape(*this, shape.getShape())
 {
-    *this = shape;
+    Tag = shape.Tag;
+    Hasher = shape.Hasher;
+    resetElementMap(shape.elementMap(false));
 }
 
 std::pair<std::string, unsigned long> TopoShape::getElementTypeAndIndex(const char* RawName)
@@ -303,7 +308,7 @@ std::pair<std::string, unsigned long> TopoShape::getElementTypeAndIndex(const ch
     const char* Name = strName.c_str();
     int index = 0;
     std::string element;
-    boost::regex ex("^(Face|Edge|Vertex)([1-9][0-9]*)$");
+    static const boost::regex ex("^(Face|Edge|Vertex)([1-9][0-9]*)$");
     boost::cmatch what;
 
     if (Name && boost::regex_match(Name, what, ex)) {

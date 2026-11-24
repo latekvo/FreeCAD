@@ -292,12 +292,13 @@ struct GeometryScreenPreselector
 
                     float bestCurveDistanceSquared = std::numeric_limits<float>::max();
                     int bestSegmentStart = -1;
+                    SbVec2f segmentStart = projectToScreen(curveValues[vertexOffset]);
                     for (int segmentIndex = 0; segmentIndex < vertexCount - 1; ++segmentIndex) {
                         int currentVertexIndex = vertexOffset + segmentIndex;
-                        SbVec2f segmentStart = projectToScreen(curveValues[currentVertexIndex]);
                         SbVec2f segmentEnd = projectToScreen(curveValues[currentVertexIndex + 1]);
                         float distanceSquared
                             = distanceSquaredToSegment(cursorPoint, segmentStart, segmentEnd);
+                        segmentStart = segmentEnd;
                         if (distanceSquared > curveHitRadiusSquared
                             || distanceSquared >= bestCurveDistanceSquared) {
                             continue;
@@ -1696,7 +1697,7 @@ void EditModeCoinManager::updateColor(const GeoListFacade& geolistfacade)
 
     // update constraint color
 
-    auto constraints = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
+    const auto& constraints = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
 
     if (ViewProviderSketchCoinAttorney::haveConstraintsInvalidGeometry(viewProvider)) {
         return;

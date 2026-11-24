@@ -59,7 +59,7 @@ std::pair<std::string, unsigned long> ComplexGeoData::getTypeAndIndex(const char
 {
     int index = 0;
     std::string element;
-    boost::regex ex("^([^0-9]*)([0-9]*)$");
+    static const boost::regex ex("^([^0-9]*)([0-9]*)$");
     boost::cmatch what;
 
     if (Name && boost::regex_match(Name, what, ex)) {

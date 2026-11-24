@@ -277,7 +277,14 @@ TopoDS_Shape TopoShape::located(const TopoDS_Shape& tds, const gp_Trsf& transfer
 void TopoShape::operator=(const TopoShape& sh)
 {
     if (this != &sh) {
-        this->setShape(sh._Shape, true);
+        // setShape(sh._Shape, true) without its initCache(); _cache is replaced below.
+        if (_cache && elementMap(false)) {
+            for (auto& info : _cache->shapeAncestryCache) {
+                info.clear();
+            }
+        }
+        Data::ComplexGeoData::resetElementMap();
+        _Shape = sh.getShape();
         this->Tag = sh.Tag;
         this->Hasher = sh.Hasher;
         this->_cache = sh._cache;

@@ -1788,7 +1788,7 @@ void StdCmdDelete::activated(int iMsg)
 
 bool StdCmdDelete::isActive()
 {
-    return !Selection().getCompleteSelection().empty();
+    return Selection().hasSelection("*");
 }
 
 //===========================================================================
@@ -2171,7 +2171,7 @@ void StdCmdEdit::activated(int iMsg)
             doCommand(Command::Gui, "Gui.activeDocument().resetEdit()");
         }
         else {
-            if (!Selection().getCompleteSelection().empty()) {
+            if (Selection().hasSelection("*")) {
                 SelectionSingleton::SelObj obj = Selection().getCompleteSelection()[0];
                 doCommand(Command::Gui, "Gui.activeDocument().setEdit(\"%s\",0)", obj.FeatName);
             }
@@ -2181,8 +2181,7 @@ void StdCmdEdit::activated(int iMsg)
 
 bool StdCmdEdit::isActive()
 {
-    return (!Selection().getCompleteSelection().empty())
-        || (Gui::Control().activeDialog() != nullptr);
+    return Selection().hasSelection("*") || (Gui::Control().activeDialog() != nullptr);
 }
 
 //===========================================================================
@@ -2221,7 +2220,7 @@ void StdCmdProperties::activated(int iMsg)
 
 bool StdCmdProperties::isActive()
 {
-    return !Selection().getCompleteSelection().empty();
+    return Selection().hasSelection("*");
 }
 
 //======================================================================

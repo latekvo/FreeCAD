@@ -5174,7 +5174,7 @@ bool ViewProviderSketch::setPreselect(const std::string& subNameSuffix, float x,
 // ViewProviderSketch implementation, while allowing ViewProviderSketch to fully delegate coin
 // management.
 
-const std::vector<Sketcher::Constraint*> ViewProviderSketch::getConstraints() const
+const std::vector<Sketcher::Constraint*>& ViewProviderSketch::getConstraints() const
 {
     return getSketchObject()->Constraints.getValues();
 }
@@ -5197,7 +5197,7 @@ bool ViewProviderSketch::isConstraintActiveInSketch(const Sketcher::Constraint* 
 
 const GeoList ViewProviderSketch::getGeoList() const
 {
-    const std::vector<Part::Geometry*> tempGeo =
+    std::vector<Part::Geometry*> tempGeo =
         getSketchObject()->getCompleteGeometry();// without memory allocation
 
     int intGeoCount = getSketchObject()->getHighestCurveIndex() + 1;

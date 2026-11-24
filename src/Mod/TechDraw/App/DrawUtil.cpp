@@ -77,7 +77,7 @@ using namespace TechDraw;
 /*static*/ int DrawUtil::getIndexFromName(const std::string& geomName)
 {
     //   Base::Console().message("DU::getIndexFromName({})\n", geomName);
-    boost::regex re("\\d+$");// one of more digits at end of string
+    static const boost::regex re("\\d+$");// one of more digits at end of string
     boost::match_results<std::string::const_iterator> what;
     boost::match_flag_type flags = boost::match_default;
     //   char* endChar;
@@ -87,7 +87,6 @@ using namespace TechDraw;
         begin += pos + 1;
     }
     std::string::const_iterator end = geomName.end();
-    std::stringstream ErrorMsg;
 
     if (geomName.empty()) {
         throw Base::ValueError("getIndexFromName - empty geometry name");
@@ -97,6 +96,7 @@ using namespace TechDraw;
     if (boost::regex_search(begin, end, what, re, flags)) {
         return int(std::stoi(what.str()));
     } else {
+        std::stringstream ErrorMsg;
         ErrorMsg << "getIndexFromName: malformed geometry name - " << geomName;
         throw Base::ValueError(ErrorMsg.str());
     }
@@ -118,7 +118,7 @@ std::string DrawUtil::getGeomTypeFromName(const std::string& geomName)
         throw Base::ValueError("getGeomTypeFromName - empty geometry name");
     }
 
-    boost::regex re("^[a-zA-Z]*");//one or more letters at start of string
+    static const boost::regex re("^[a-zA-Z]*");//one or more letters at start of string
     boost::match_results<std::string::const_iterator> what;
     boost::match_flag_type flags = boost::match_default;
     std::string::const_iterator begin = geomName.begin();
@@ -127,11 +127,11 @@ std::string DrawUtil::getGeomTypeFromName(const std::string& geomName)
         begin += pos + 1;
     }
     std::string::const_iterator end = geomName.end();
-    std::stringstream ErrorMsg;
 
     if (boost::regex_search(begin, end, what, re, flags)) {
         return what.str();
     } else {
+        std::stringstream ErrorMsg;
         ErrorMsg << "In getGeomTypeFromName: malformed geometry name - " << geomName;
         throw Base::ValueError(ErrorMsg.str());
     }

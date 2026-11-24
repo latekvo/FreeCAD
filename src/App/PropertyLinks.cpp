@@ -1316,6 +1316,9 @@ void PropertyLinkList::breakLink(App::DocumentObject* obj, bool clear)
         setValues({});
         return;
     }
+    if (std::find(_lValueList.begin(), _lValueList.end(), obj) == _lValueList.end()) {
+        return;
+    }
     std::vector<App::DocumentObject*> values;
     values.reserve(_lValueList.size());
     for (auto o : _lValueList) {
@@ -1323,9 +1326,7 @@ void PropertyLinkList::breakLink(App::DocumentObject* obj, bool clear)
             values.push_back(o);
         }
     }
-    if (values.size() != _lValueList.size()) {
-        setValues(values);
-    }
+    setValues(values);
 }
 
 bool PropertyLinkList::adjustLink(const std::set<App::DocumentObject*>& inList)
@@ -2626,7 +2627,7 @@ int PropertyLinkSubList::removeValue(App::DocumentObject* lValue)
         }
     }
 
-    setValues(links, subs);
+    setValues(std::move(links), std::move(subs));
     return static_cast<int>(num);
 }
 
@@ -2649,7 +2650,7 @@ void PropertyLinkSubList::setSubListValues(const std::vector<PropertyLinkSubList
             subs.push_back(*jt);
         }
     }
-    setValues(links, subs);
+    setValues(std::move(links), std::move(subs));
 }
 
 std::vector<PropertyLinkSubList::SubSet> PropertyLinkSubList::getSubListValues(bool newStyle) const
@@ -2783,7 +2784,7 @@ void PropertyLinkSubList::setPyObject(PyObject* value)
             throw Base::TypeError(errMsg);
         }
     }
-    setValues(values, SubNames);
+    setValues(std::move(values), std::move(SubNames));
 }
 
 void PropertyLinkSubList::afterRestore()
@@ -2972,7 +2973,7 @@ void PropertyLinkSubList::Restore(Base::XMLReader& reader)
     reader.readEndElement("LinkSubList");
 
     // assignment
-    setValues(values, SubNames, std::move(shadows));
+    setValues(std::move(values), std::move(SubNames), std::move(shadows));
     _mapped.swap(mapped);
 }
 
@@ -3288,6 +3289,10 @@ void PropertyLinkSubList::breakLink(App::DocumentObject* obj, bool clear)
     }
     assert(_lValueList.size() == _lSubList.size());
 
+    if (std::find(_lValueList.begin(), _lValueList.end(), obj) == _lValueList.end()) {
+        return;
+    }
+
     values.reserve(_lValueList.size());
     subs.reserve(_lSubList.size());
 
@@ -3300,9 +3305,7 @@ void PropertyLinkSubList::breakLink(App::DocumentObject* obj, bool clear)
         values.push_back(o);
         subs.push_back(_lSubList[i]);
     }
-    if (values.size() != _lValueList.size()) {
-        setValues(values, subs);
-    }
+    setValues(std::move(values), std::move(subs));
 }
 
 bool PropertyLinkSubList::adjustLink(const std::set<App::DocumentObject*>& inList)

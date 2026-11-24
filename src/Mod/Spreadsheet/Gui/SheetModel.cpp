@@ -269,10 +269,6 @@ QVariant SheetModel::data(const QModelIndex& index, int role) const
         return {};
     }
 
-    // Get display value as computed property
-    std::string address = CellAddress(row, col).toString();
-    Property* prop = sheet->getPropertyByName(address.c_str());
-
     if (role == Qt::BackgroundRole) {
         Base::Color color;
 
@@ -333,7 +329,11 @@ QVariant SheetModel::data(const QModelIndex& index, int role) const
         return QVariant::fromValue(f);
     }
 
-    auto dirtyCells = sheet->getCells()->getDirty();
+    // Get display value as computed property
+    std::string address = CellAddress(row, col).toString();
+    Property* prop = sheet->getPropertyByName(address.c_str());
+
+    const auto& dirtyCells = sheet->getCells()->getDirty();
     auto dirty = (dirtyCells.find(CellAddress(row, col)) != dirtyCells.end());
 
     if (!prop || dirty) {

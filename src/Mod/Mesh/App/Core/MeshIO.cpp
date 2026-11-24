@@ -1100,7 +1100,7 @@ bool MeshInput::LoadNastran(std::istream& input)
         }
         else if (line.rfind("GRID", 0) == 0) {
 
-            boost::regex rx_spaceDelimited(
+            static const boost::regex rx_spaceDelimited(
                 "\\s*GRID\\s+([0-9]+)"
                 "\\s+([-+]?[0-9]*)\\.?([0-9]+([eE][-+]?[0-9]+)?)"
                 "\\s+([-+]?[0-9]*)\\.?([0-9]+([eE][-+]?[0-9]+)?)"

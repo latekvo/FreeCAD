@@ -510,6 +510,7 @@ def calculate_csr(ps1, ps2, ps3, alpha, beta, res_obj):
     """
     csr = []  # critical strain ratio
     nsr = len(ps1)  # number of stress results
+    peeq = res_obj.Peeq
     for i in range(nsr):
         p = (ps1[i] + ps2[i] + ps3[i]) / 3.0  # pressure
         svm = np.sqrt(
@@ -520,7 +521,7 @@ def calculate_csr(ps1, ps2, ps3, alpha, beta, res_obj):
         else:
             T = 0.0
         critical_strain = alpha * np.exp(-beta * T)  # critical strain
-        csr.append(abs(res_obj.Peeq[i]) / critical_strain)  # critical strain ratio
+        csr.append(abs(peeq[i]) / critical_strain)  # critical strain ratio
     return csr
 
 

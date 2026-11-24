@@ -41,17 +41,9 @@ bool ShapeRelationKey::operator<(const ShapeRelationKey& other) const
 
 TopoShape TopoShapeCache::Ancestry::_getTopoShape(const TopoShape& parent, int index)
 {
-    TopoShape ts;
-
-    if (int(topoShapes.size()) >= index) {
-        ts = topoShapes[index - 1];
-    }
-
-    if (ts.isNull()) {
-        ts = shapes.FindKey(index);
-        ts.initCache();
-        ts._cache->subLocation = ts._Shape.Location();
-    }
+    TopoShape ts(shapes.FindKey(index));
+    ts.initCache();
+    ts._cache->subLocation = ts._Shape.Location();
 
     if (ts._Shape.IsEqual(parent._cache->shape)) {
         return parent;
@@ -111,7 +103,6 @@ TopoShape TopoShapeCache::Ancestry::getTopoShape(const TopoShape& parent, int in
     if (index <= 0 || index > shapes.Extent()) {
         return res;
     }
-    topoShapes.resize(shapes.Extent());
     return _getTopoShape(parent, index);
 }
 
@@ -120,7 +111,6 @@ std::vector<TopoShape> TopoShapeCache::Ancestry::getTopoShapes(const TopoShape& 
     int count = shapes.Extent();
     std::vector<TopoShape> res;
     res.reserve(count);
-    topoShapes.resize(count);
     for (int i = 1; i <= count; ++i) {
         res.push_back(_getTopoShape(parent, i));
     }

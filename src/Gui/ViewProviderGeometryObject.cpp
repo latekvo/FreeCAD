@@ -21,6 +21,8 @@
  ***************************************************************************/
 
 
+#include <cstring>
+
 #include <Inventor/SoPickedPoint.h>
 #include <Inventor/actions/SoRayPickAction.h>
 #include <Inventor/actions/SoSearchAction.h>
@@ -129,7 +131,6 @@ void ViewProviderGeometryObject::onChanged(const App::Property* prop)
     // Actually, the properties 'ShapeColor' and 'Transparency' are part of the property
     // 'ShapeMaterial'. Both redundant properties are kept due to more convenience for the user. But
     // we must keep the values consistent of all these properties.
-    std::string propName = prop->getName();
     if (prop == &Selectable) {
         bool Sel = Selectable.getValue();
         setSelectable(Sel);
@@ -173,7 +174,7 @@ void ViewProviderGeometryObject::updateData(const App::Property* prop)
     if (prop->isDerivedFrom<App::PropertyComplexGeoData>()) {
         updateBoundingBox();
     }
-    else if (std::string(prop->getName()) == "ShapeMaterial") {
+    else if (std::strcmp(prop->getName(), "ShapeMaterial") == 0) {
         // Set the appearance from the material
         if (auto geometry = getObject<App::GeoFeature>()) {
             /*

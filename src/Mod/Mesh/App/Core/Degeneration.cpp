@@ -936,10 +936,10 @@ bool MeshEvalFoldsOnSurface::Evaluate()
     const MeshFacetArray& rFAry = _rclMesh.GetFacets();
     unsigned long ct = 0;
     for (auto it = rFAry.begin(); it != rFAry.end(); ++it, ct++) {
+        Base::Vector3f v1 = _rclMesh.GetFacet(*it).GetNormal();
         for (int i = 0; i < 3; i++) {
             FacetIndex n1 = it->_aulNeighbours[i];
             FacetIndex n2 = it->_aulNeighbours[(i + 1) % 3];
-            Base::Vector3f v1 = _rclMesh.GetFacet(*it).GetNormal();
             if (n1 != FACET_INDEX_MAX && n2 != FACET_INDEX_MAX) {
                 Base::Vector3f v2 = _rclMesh.GetFacet(n1).GetNormal();
                 Base::Vector3f v3 = _rclMesh.GetFacet(n2).GetNormal();

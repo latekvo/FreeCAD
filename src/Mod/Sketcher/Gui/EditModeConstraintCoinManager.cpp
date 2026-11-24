@@ -1792,7 +1792,7 @@ void EditModeConstraintCoinManager::updateConstraintColor(
             }
         }
 
-        auto selectpoint = [this, pcolor, PtNum](int geoid, Sketcher::PointPos pos) {
+        auto selectpoint = [this, &pcolor, &PtNum](int geoid, Sketcher::PointPos pos) {
             if (geoid >= 0) {
                 auto multifieldIndex = coinMapping.getIndexLayer(geoid, pos);
 
@@ -1806,7 +1806,7 @@ void EditModeConstraintCoinManager::updateConstraintColor(
             }
         };
 
-        auto selectline = [this, color, CurvNum](int geoid) {
+        auto selectline = [this, &color, &CurvNum](int geoid) {
             if (geoid >= 0) {
                 auto multifieldIndex = coinMapping.getIndexLayer(geoid, Sketcher::PointPos::none);
 
@@ -3047,7 +3047,7 @@ QColor EditModeConstraintCoinManager::constrColor(int constraintId)
         return {(int)(sbcolor[0] * 255.0F), (int)(sbcolor[1] * 255.0F), (int)(sbcolor[2] * 255.0F)};
     };
 
-    const auto constraints = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
+    const auto& constraints = ViewProviderSketchCoinAttorney::getConstraints(viewProvider);
     bool isActive = ViewProviderSketchCoinAttorney::isConstraintActiveInSketch(
         viewProvider,
         constraints[constraintId]

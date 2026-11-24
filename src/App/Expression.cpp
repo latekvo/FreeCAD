@@ -3382,7 +3382,7 @@ void RangeExpression::_getIdentifiers(std::map<App::ObjectIdentifier,bool> &deps
 
     do {
         ObjectIdentifier var(owner,i.address());
-        auto res = deps.insert(std::make_pair(var,hidden));
+        auto res = deps.insert(std::make_pair(std::move(var),hidden));
         if(!hidden || res.second)
             res.first->second = hidden;
     } while (i.next());

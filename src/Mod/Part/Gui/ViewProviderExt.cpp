@@ -1380,14 +1380,12 @@ void ViewProviderPartExt::setupCoinGeometry(
         }
     }
 
-    std::map<int, int> coordsMap;
     nodeset->startIndex.setValue(faceNodeOffset);
     for (int i = 0; i < vertexMap.Extent(); i++) {
         const TopoDS_Vertex& aVertex = TopoDS::Vertex(vertexMap(i + 1));
         gp_Pnt pnt = BRep_Tool::Pnt(aVertex);
 
         verts[faceNodeOffset + i] = Base::convertTo<SbVec3f>(pnt);
-        coordsMap[i + 1] = faceNodeOffset + i;
     }
 
     // normalize all normals
@@ -1410,11 +1408,10 @@ void ViewProviderPartExt::setupCoinGeometry(
         if (!aPoly.IsNull() && aPoly->NbNodes() == 2) {
             const int v1 = vertexMap.FindIndex(TopExp::FirstVertex(edge));
             const int v2 = vertexMap.FindIndex(TopExp::LastVertex(edge));
-            const auto it = coordsMap.find(v1);
-            const auto jt = coordsMap.find(v2);
-            if (it != coordsMap.end() && jt != coordsMap.end()) {
-                indexedPnt1 = it->second;
-                indexedPnt2 = jt->second;
+            // FindIndex returns 0 when absent
+            if (v1 > 0 && v2 > 0) {
+                indexedPnt1 = faceNodeOffset + v1 - 1;
+                indexedPnt2 = faceNodeOffset + v2 - 1;
             }
         }
 
