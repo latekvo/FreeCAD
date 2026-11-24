@@ -5370,7 +5370,7 @@ void System::identifyDependentGeometryParametersInTransposedJacobianDenseQRDecom
     rowPermutations.setIdentity(paramsNum);
 
     // P.J.P' = Q.R see https://eigen.tuxfamily.org/dox/classEigen_1_1FullPivHouseholderQR.html
-    const MatrixIndexType rowTranspositions = qrJT.rowsTranspositions();
+    const MatrixIndexType& rowTranspositions = qrJT.rowsTranspositions();
 
     for (int k = 0; k < rank; ++k) {
         rowPermutations.applyTranspositionOnTheRight(k, rowTranspositions.coeff(k));
