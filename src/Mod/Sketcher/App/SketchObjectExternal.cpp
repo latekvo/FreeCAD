@@ -637,7 +637,7 @@ int SketchObject::carbonCopy(App::DocumentObject* pObj, bool construction)
     Geometry.touch();
 
     auto makeCorrectedExpressionString =
-        [xinv, yinv](const Sketcher::Constraint* constr, const std::string expr) -> std::string {
+        [xinv, yinv](const Sketcher::Constraint* constr, const std::string& expr) -> std::string {
         if (!xinv && !yinv) {
             return expr;
         }
