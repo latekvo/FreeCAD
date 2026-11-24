@@ -2614,6 +2614,7 @@ static void buildDependencyList(const std::vector<DocumentObject*>& objectArray,
     };
 
     const int op = ((options & Document::DepNoXLinked) != 0) ? DocumentObject::OutListNoXLinked : 0;
+    const bool fineGrained = GetApplication().isFineGrainedRecomputeEnabled();
     for (auto obj : objectArray) {
         objs.push_back(obj);
         while (!objs.empty()) {
@@ -2643,7 +2644,7 @@ static void buildDependencyList(const std::vector<DocumentObject*>& objectArray,
             }
 
             auto& outList = outLists[objF];
-            if (GetApplication().isFineGrainedRecomputeEnabled()) {
+            if (fineGrained) {
                 outList = getOutListFineGrained(objF, op);
             }
             else {
@@ -2976,8 +2977,8 @@ int Document::recompute(const std::vector<DocumentObject*>& objs,
                     signalRecomputedObject(*obj);
                     if (fineGrained) {
                         // set all dependent objects touched based on properties
-                        std::vector<DepEdge> inList = obj->getInListProp();
-                        for (auto& [objFrom, propFrom, objTo, propTo] : inList) {
+                        const auto& inList = obj->getInListProp();
+                        for (const auto& [objFrom, propFrom, objTo, propTo] : inList) {
                             if (obj->touchedProps.contains(propTo) || propTo.empty()) {
                                 objFrom->enforceRecompute(propFrom);
                             }
