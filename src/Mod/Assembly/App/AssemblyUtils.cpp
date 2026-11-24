@@ -471,7 +471,7 @@ std::vector<std::string> getSubAsList(const App::PropertyXLinkSub* prop)
         return {};
     }
 
-    const auto subs = prop->getSubValues();
+    const auto& subs = prop->getSubValues();
     if (subs.empty()) {
         return {};
     }
@@ -638,7 +638,7 @@ App::DocumentObject* getObjFromRef(const App::PropertyXLinkSub* prop)
         return nullptr;
     }
 
-    const std::vector<std::string> subs = prop->getSubValues();
+    const auto& subs = prop->getSubValues();
     if (subs.empty()) {
         return nullptr;
     }

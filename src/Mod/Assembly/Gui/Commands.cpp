@@ -357,7 +357,7 @@ void CmdAssemblySelectJointsOfComponent::activated(int iMsg)
 
 bool CmdAssemblySelectJointsOfComponent::isActive()
 {
-    return getActiveAssembly() != nullptr && !Gui::Selection().getSelection().empty();
+    return getActiveAssembly() != nullptr && Gui::Selection().hasSelection(nullptr);
 }
 
 
