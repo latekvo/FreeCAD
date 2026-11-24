@@ -171,11 +171,13 @@ def femmesh_2_mesh(myFemMesh, myResults=None, myDispScale=1):
     output_mesh = []
     if myResults:
         FreeCAD.Console.PrintMessage(f"{myResults.Name}\n")
+        disp_vectors = myResults.DisplacementVectors
+        node_numbers = myResults.NodeNumbers
         for myFace in singleFaces:
             face_nodes = faceCodeDict[myFace]
-            dispVec0 = myResults.DisplacementVectors[myResults.NodeNumbers.index(face_nodes[0])]
-            dispVec1 = myResults.DisplacementVectors[myResults.NodeNumbers.index(face_nodes[1])]
-            dispVec2 = myResults.DisplacementVectors[myResults.NodeNumbers.index(face_nodes[2])]
+            dispVec0 = disp_vectors[node_numbers.index(face_nodes[0])]
+            dispVec1 = disp_vectors[node_numbers.index(face_nodes[1])]
+            dispVec2 = disp_vectors[node_numbers.index(face_nodes[2])]
             triangle = [
                 myFemMesh.getNodeById(face_nodes[0]) + dispVec0 * myDispScale,
                 myFemMesh.getNodeById(face_nodes[1]) + dispVec1 * myDispScale,
@@ -184,7 +186,7 @@ def femmesh_2_mesh(myFemMesh, myResults=None, myDispScale=1):
             output_mesh.extend(triangle)
             # print("my triangle: ", triangle)
             if len(face_nodes) == 4:
-                dispVec3 = myResults.DisplacementVectors[myResults.NodeNumbers.index(face_nodes[3])]
+                dispVec3 = disp_vectors[node_numbers.index(face_nodes[3])]
                 triangle = [
                     myFemMesh.getNodeById(face_nodes[2]) + dispVec2 * myDispScale,
                     myFemMesh.getNodeById(face_nodes[3]) + dispVec3 * myDispScale,
