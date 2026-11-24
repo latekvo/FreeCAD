@@ -478,7 +478,7 @@ bool TaskMassProperties::reject()
 
 void TaskMassProperties::escape()
 {
-    if (Gui::Selection().getSelection().empty()) {
+    if (!Gui::Selection().hasSelection(nullptr)) {
         this->reject();
         return;
     }
@@ -1504,7 +1504,7 @@ void TaskMassProperties::onCoordinateSystemChanged(MassPropertiesMode coordSyste
         currentAxisReference.reset();
         panel->ui.customEdit->clear();
     }
-    if (Gui::Selection().getSelection().empty()) {
+    if (!Gui::Selection().hasSelection(nullptr)) {
         clearUiFields();
         panel->ui.objectList->clear();
         removeTemporaryObjects();
