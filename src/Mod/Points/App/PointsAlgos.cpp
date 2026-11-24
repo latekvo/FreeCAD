@@ -926,8 +926,6 @@ void PlyReader::readAscii(std::istream& inp, std::size_t offset, Eigen::MatrixXd
         boost::trim(line);
         boost::split(list, line, boost::is_any_of("\t\r "), boost::token_compress_on);
 
-        std::istringstream str(line);
-
         Eigen::Index size = Eigen::Index(list.size());
         for (Eigen::Index col = 0; col < size && col < numFields; col++) {
             double value = boost::lexical_cast<double>(list[col]);
@@ -1293,8 +1291,6 @@ void PcdReader::readAscii(std::istream& inp, Eigen::MatrixXd& data)
         // since the file is loaded in binary mode we may get the CR at the end
         boost::trim(line);
         boost::split(list, line, boost::is_any_of("\t\r "), boost::token_compress_on);
-
-        std::istringstream str(line);
 
         Eigen::Index size = Eigen::Index(list.size());
         for (Eigen::Index col = 0; col < size && col < numFields; col++) {
@@ -2113,7 +2109,7 @@ void PlyWriter::write(const std::string& filename)
             float value = data(r, c);
             out << converters[c]->toString(value) << " ";
         }
-        out << std::endl;
+        out << '\n';
     }
 }
 
@@ -2293,6 +2289,6 @@ void PcdWriter::write(const std::string& filename)
                 out << converters[c]->toString(value) << " ";
             }
         }
-        out << std::endl;
+        out << '\n';
     }
 }
