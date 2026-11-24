@@ -96,10 +96,10 @@ void CArea::PopulateClipper(Clipper64& c, bool as_clip, ConversionMetadata& meta
         Path64 p = MakePoly(curve, metadata);
 
         if (is_closed) {
-            closed_paths.push_back(p);
+            closed_paths.push_back(std::move(p));
         }
         else {
-            open_paths.push_back(p);
+            open_paths.push_back(std::move(p));
         }
     }
 
@@ -263,10 +263,10 @@ void CArea::ClipperNoop()
         Path64 p = MakePoly(curve, metadata);
 
         if (is_closed) {
-            closed_paths.push_back(p);
+            closed_paths.push_back(std::move(p));
         }
         else {
-            open_paths.push_back(p);
+            open_paths.push_back(std::move(p));
         }
     }
 
@@ -549,7 +549,7 @@ void CArea::NaiveOffset(double offset)
                  ++it) {
                 output_curve.m_edgeTags.push_back(1);
             }
-            offset_curves.push_back(output_curve);
+            offset_curves.push_back(std::move(output_curve));
 
             continue;
         }
@@ -575,13 +575,13 @@ void CArea::NaiveOffset(double offset)
             for (auto it = std::next(cPos.m_vertices.begin()); it != cPos.m_vertices.end(); ++it) {
                 cPos.m_edgeTags.push_back(1);
             }
-            offset_curves.push_back(cPos);
+            offset_curves.push_back(std::move(cPos));
 
             // Save the negative offset to the output list
             for (auto it = std::next(cNeg.m_vertices.begin()); it != cNeg.m_vertices.end(); ++it) {
                 cNeg.m_edgeTags.push_back(-1);
             }
-            offset_curves.push_back(cNeg);
+            offset_curves.push_back(std::move(cNeg));
         }
         else {
             // Reverse cNeg so it's correctly oriented to join with cPos and the end caps
@@ -607,7 +607,7 @@ void CArea::NaiveOffset(double offset)
             cPos.m_edgeTags.push_back(0);
 
             // Save results to the output list
-            offset_curves.push_back(cPos);
+            offset_curves.push_back(std::move(cPos));
         }
     }
 
