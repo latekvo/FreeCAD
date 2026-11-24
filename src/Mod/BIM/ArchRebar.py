@@ -533,12 +533,13 @@ class _Rebar(ArchComponent.Component):
             obj.Amount = len(spacinglist)
             obj.Spacing = 0
         obj.PlacementList = placementlist
-        for i in range(len(obj.PlacementList)):
+        placements = obj.PlacementList
+        for i in range(len(placements)):
             bar = bar.copy()
-            bar.Placement = obj.PlacementList[i]
+            bar.Placement = placements[i]
             shapes.append(bar)
             w = basewire.copy()
-            w.Placement = obj.PlacementList[i]
+            w.Placement = placements[i]
             self.wires.append(w)
         if shapes:
             obj.Shape = Part.makeCompound(shapes)
