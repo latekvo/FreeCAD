@@ -4769,7 +4769,6 @@ void Sketch::updateGeometry(const GeoDef& it)
 void Sketch::updatePoint(const GeoDef& def)
 {
     GeomPoint* point = static_cast<GeomPoint*>(def.geo);
-    auto pointf = GeometryFacade::getFacade(point);
 
     point->setPoint(Vector3d(*Points[def.startPointId].x, *Points[def.startPointId].y, 0.0));
 }

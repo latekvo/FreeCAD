@@ -273,7 +273,6 @@ bool PropertyConstraintList::getPyPathValue(const App::ObjectIdentifier& path, P
         cstr = _lValueList[c1.getIndex(_lValueList.size())];
     }
     else if (c1.isSimple()) {
-        ObjectIdentifier::Component c1 = path.getPropertyComponent(1);
         for (auto c : _lValueList) {
             if (c->Name == c1.getName()) {
                 cstr = c;
@@ -589,8 +588,6 @@ const Constraint* PropertyConstraintList::getConstraint(const ObjectIdentifier& 
         return _lValueList[c1.getIndex(_lValueList.size())];
     }
     else if (c1.isSimple()) {
-        ObjectIdentifier::Component c1 = path.getPropertyComponent(1);
-
         for (std::vector<Constraint*>::const_iterator it = _lValueList.begin();
              it != _lValueList.end();
              ++it) {
