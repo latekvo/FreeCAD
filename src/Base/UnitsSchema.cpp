@@ -69,7 +69,8 @@ std::string UnitsSchema::translate(
     }
 
     const auto unitName = quant.getUnit().getTypeString();
-    if (!spec.translationSpecs.contains(unitName)) {
+    const auto unitSpecsIt = spec.translationSpecs.find(unitName);
+    if (unitSpecsIt == spec.translationSpecs.end()) {
         return toLocale(quant, formatting, factor, unitString);
     }
 
@@ -83,7 +84,7 @@ std::string UnitsSchema::translate(
             || row.threshold == 0;  // zero indicates default
     };
 
-    auto unitSpecs = spec.translationSpecs.at(unitName);
+    const auto& unitSpecs = unitSpecsIt->second;
     const auto unitSpec = std::find_if(unitSpecs.begin(), unitSpecs.end(), isSuitable);
     if (unitSpec == unitSpecs.end()) {
         throw RuntimeError(
