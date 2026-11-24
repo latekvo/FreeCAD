@@ -664,7 +664,7 @@ private:
                 curve.append(CVertex {{p.x + radius, p.y}});
                 curve.append(CVertex {1, {p.x - radius, p.y}, {p.x, p.y}});
                 curve.append(CVertex {1, {p.x + radius, p.y}, {p.x, p.y}});
-                holes.append(curve);
+                holes.move(std::move(curve));
             }
         }
     }
@@ -684,7 +684,7 @@ private:
                 CCurve curve;
                 curve.append(CVertex {{last.x, last.y}});
                 curve.append(CVertex {{next.x, next.y}});
-                pathSegments.append(curve);
+                pathSegments.move(std::move(curve));
             }
         }
     }
@@ -751,7 +751,7 @@ public:
             CCurve curve;
             curve.append(CVertex {{last.x, last.y}});
             curve.append(CVertex {ccw ? 1 : -1, {next.x, next.y}, {center.x, center.y}});
-            pathSegments.append(curve);
+            pathSegments.move(std::move(curve));
         }
     }
 
