@@ -581,7 +581,7 @@ void Base::XMLReader::startElement(
     // saving attributes of the current scope, delete all previously stored ones
     AttrMap.clear();
     for (unsigned int i = 0; i < attrs.getLength(); i++) {
-        AttrMap[StrX(attrs.getQName(i)).c_str()] = StrXUTF8(attrs.getValue(i)).c_str();
+        AttrMap[StrX(attrs.getQName(i)).c_str()] = std::move(StrXUTF8(attrs.getValue(i)).str);
     }
 
     ReadType = StartElement;
